@@ -2,14 +2,16 @@
 Progetto di Algoritmi e Strutture Dati
 Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti tre macro-moduli:
 ### 1. Modulo AsGraph
-    - __Compiti__: lettura e parsing dell'input.
-    -__Obiettivi__: inserimento di nodi/archi, calcolo dei pesi, estrazione della componente connessa più grande.
+    - __Compiti__: lettura e parsing dell'input,inserimento di nodi/archi, calcolo dei pesi, estrazione della componente connessa più grande.
+    -__Obiettivi__: rappresentazione efficiente del grafo BGP, senza nodi isolati o sconnessi.
     -__Strutture Dati__: *tabella hash per mappare gli ID originali degli AS in indici interi consecutivi.
-                         *lista di adiacenza per rappresentare il grafo pesato.
+                         *lista di adiacenza per rappresentare il grafo pesato (più conveniente rispetto alla rappresentazione mediante matrice di adiacenza per via della maggiore efficienza nella gestione degli spazi e più comoda per implementare gli algoritmi di visita).
+                         *array di visita per estrarre la componente connessa più grande.
 ### 2. Modulo MiniMax
-    - __Compiti__: rielaborazione del grafo all'interno di una struttura dati apposita.
-    - __Obiettivi__: algoritmo per trovare il cammino di costo minimo tra due nodi dell'albero. (Idea: utilizzare l'algoritmo di Kruksal).
-    - __Strutture Dati__: 
+    - __Compiti__: ordinamento degli archi per frequenza, esecuzione dell'algoritmo Kruksal tramite Union Find per costruire l'MST, pre-calcolo delle tabelle per il Binary Lifting.
+    - __Obiettivi__: ricerca del cammino MiniMax ottimo e calcolo del costo tra qualsiasi coppia di nodi in tempo logaritmico.
+    - __Strutture Dati__: *
+                          *
 ### 3. Count_Paths
     - __Compiti__: da definire.
     - __Obiettivi__: eventuale implementazione della parte opzionale del codice.
@@ -17,5 +19,5 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti tre
 ### 4. Experimental_Analysis
     - __Compiti__: da definire
     - __Obiettivi__: analisi del costo computazionale.
-    - __Strutture dati__:
+    - __Strutture Dati__:
     
