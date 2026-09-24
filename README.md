@@ -10,4 +10,7 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti tre
 ### 3. Count_Paths
     - __Compiti__: da definire.
     - __Obiettivi__: eventuale implementazione della parte opzionale del codice.
+### 4. Experimental_Analysis
+    - __Compiti__: da definire
+    - __Obiettivi__: analisi del costo computazionale.
     
