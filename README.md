@@ -17,4 +17,5 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti tre
 ### 4. Experimental_Analysis
     - __Compiti__: da definire
     - __Obiettivi__: analisi del costo computazionale.
+    - __Strutture dati__:
     
