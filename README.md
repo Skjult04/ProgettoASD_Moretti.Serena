@@ -10,14 +10,16 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti tre
 ### 2. Modulo MiniMax
     - __Compiti__: ordinamento degli archi per frequenza, esecuzione dell'algoritmo Kruksal tramite Union Find per costruire l'MST, pre-calcolo delle tabelle per il Binary Lifting.
     - __Obiettivi__: ricerca del cammino MiniMax ottimo e calcolo del costo tra qualsiasi coppia di nodi in tempo logaritmico.
-    - __Strutture Dati__: *
-                          *
+    - __Strutture Dati__: *lista di archi
+                          *Union-Find
+                          *Tabelle per Binary Lifting
 ### 3. Count_Paths
     - __Compiti__: da definire.
     - __Obiettivi__: eventuale implementazione della parte opzionale del codice.
     -__Strutture Dati__:
 ### 4. Experimental_Analysis
-    - __Compiti__: da definire
-    - __Obiettivi__: analisi del costo computazionale.
-    - __Strutture Dati__:
+    - __Compiti__: tracciamento dei tempi di esecuzione delle singole fasi.
+    - __Obiettivi__: analisi della complessità computazionale computazionale.
+    - __Strutture Dati__: * vector per l'istogramma delle frequenze.
+
     
