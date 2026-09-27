@@ -13,13 +13,15 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti tre
     - __Strutture Dati__: *lista di archi
                           *Union-Find
                           *Tabelle per Binary Lifting
-### 3. Count_Paths
+### 3. Modulo Count_Paths
     - __Compiti__: da definire.
     - __Obiettivi__: eventuale implementazione della parte opzionale del codice.
     -__Strutture Dati__:
-### 4. Experimental_Analysis
+### 4. Modulo Experimental_Analysis
     - __Compiti__: tracciamento dei tempi di esecuzione delle singole fasi.
     - __Obiettivi__: analisi della complessità computazionale computazionale.
     - __Strutture Dati__: * vector per l'istogramma delle frequenze.
+## Interazione fra Moduli: 
+L'interazione fra i Moduli avviene in maniera sequenziale. L'input, rielaborato da AsGraph, viene passato a MiniMax, che lo utilizza per la costruzione dell'MST e e il pre-calcolo delle tabelle per il Binary Lifting. Da definire interazione con il terzo Modulo. Il quarto modulo interroga AsGraph per ottenere il numero totale di nodi e misura i tempi di esecuzione di tutti i Moduli del codice.
 
     
