@@ -1,44 +1,56 @@
-#ifndef AS_GRAPH_HPP
-#define AS_GRAPH_HPP
+#ifndef AS_GRAPH_HPP //serve ad escludere il contenuto del file header se è già stato incluso in precedenza, evitando duplicazioni e conflitti di definizione.
+#define AS_GRAPH_HPP //definisce l'etichetta AS_GRAPH_HPP nella memoria del preprocessore, indicando che il file header è stato incluso.
 
 #include <string>
-#include <map>
-#include <unordered_map>
+#include <map> //Struttura dati che permette di associare chiavi a valori, in questo caso associa coppie di interi (archi) a frequenze. 
+#include <unordered_map> //Tabella hash che calcola un valore per la chiave e posizione l'elemento in un bucket corrispondente.
 #include <vector>
-#include <utility>
+#include <utility> //mette a disposizione il tipo di dato std::pair, che rappresenta una coppia di valori, utile per memorizzare archi e frequenze.
 
 class AsGraph {
 private:
-    // Step 1.1: Mappa temporanea per frequenze archi (min_AS, max_AS) -> Frequenza
+    // Sottomodulo AsGraph1:
     std::map<std::pair<int, int>, int> edge_frequencies;
 
-    // Step 1.2: Tabelle di mappatura ID e Lista di Adiacenza
+    // Sottomodulo AsGraph2:
     std::unordered_map<int, int> id_to_index; // ID originale AS -> Indice 0..V-1
     std::vector<int> index_to_id;             // Indice 0..V-1 -> ID originale AS
     
-    // Lista di adiacenza: adj[u] = lista di coppie (v_id, peso/frequenza)
+    //Sottomodulo AsGraph2:
+    // Lista di adiacenza: adj[u] = lista di coppie (indice_interno, peso/frequenza)
     std::vector<std::vector<std::pair<int, int>>> adj;
-
-    // Helper interno per la Fase 2
+    
+    //Sottomodulo AsGraph2:
+    // Helper interno per mappare un ID AS a un indice progressivo 0..V-1
     int helper(int as_number);
 
 public:
-    AsGraph() = default;
+    AsGraph() = default; //Costruttore di default per la classe AsGraph, che viene chiamato quando si crea un oggetto di questa classe senza parametri.
 
-    // Step 1.3: Lettura file e conteggio frequenze
+    // Sottomodulo AsGraph1: Lettura del file e conteggio delle frequenze degli archi
     void count_frequencies(const std::string& filename);
 
-    // Step 1.4: Costruzione del grafo mappato
+    // Sottomodulo AsGraph2: Costruzione del grafo tramite mappatura degli ID e lista di adiacenza
     void construct_graph();
 
-    // Step 1.5: Filtro per la Componente Connessa Più Grande (LCC)
+    // Sottomodulo AsGraph3: Estrazione della componente connessa più grande (LCC)
     void extract_lcc();
 
     // Getter utilità per gli altri moduli (MiniMax, Experimental_Analysis)
-    int count_nodes() const { return static_cast<int>(adj.size()); }
-    size_t count_unique_edges() const { return edge_frequencies.size(); }
+
+    // Restituisce il numero di nodi nel grafo (dopo eventuale estrazione della LCC)
+    int count_nodes() const { return static_cast<int>(adj.size()); } // static_cast<int> serve a convertire il tipo di dato size_t in int, garantendo che il valore restituito sia coerente con il tipo di ritorno della funzione.
+
+    //Conta il numero di archi unici nel grafo (dopo eventuale estrazione della LCC)
+    int count_unique_edges() const;
+
+     // Restituisce la lista di adiacenza del grafo (dopo eventuale estrazione della LCC)
     const std::vector<std::vector<std::pair<int, int>>>& get_adj() const { return adj; }
+    
+    // Restituisce l'ID originale AS dato un indice interno 0..V-1 (dopo eventuale estrazione della LCC)
     int get_original_id(int internal_id) const { return index_to_id[internal_id]; }
+
+    int get_index(int as_number) const;   // -1 se l'ID non è nel grafo
 };
 
 #endif
