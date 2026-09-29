@@ -1,0 +1,24 @@
+#Ignora i file oggetto generati durante la compilazione
+src/*.o
+*.out
+
+#Ignora gli eseguibili generati
+*.exe
+*.out
+
+#Ignora i dataset BGP e file compressi pesanti
+*.bz2
+data/*.bz2
+data/*.all-paths
+*.all-paths
+
+#Ignora file di testo generati o di output di grandi dimensioni
+data/output_*.txt
+#VS Code
+.vscode/
+
+#File temporanei di editor di testo
+*~
+*.swp
+.DS_Store
+Thumbs.db
