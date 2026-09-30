@@ -35,7 +35,7 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti qua
 
 ### Tipi e funtori ausiliari
 
-- `EdgeHash`: funtore che calcola l'hash di una `std::pair<int,int>` (la libreria standard non ne fornisce uno) con la formula stile Boost e la costante `0x9e3779b9`. **Non riordina la coppia**: la chiave va inserita già ordinata (vedi invarianti).
+- `EdgeHash`: funtore che calcola l'hash di una `std::pair<int,int>` (la libreria standard non ne fornisce uno) con la formula stile Boost e la costante `0x9e3779b9`. Non riordina la coppia: la chiave va inserita già ordinata (vedi invarianti).
 
 ### Invarianti
 
@@ -75,7 +75,7 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 - **Obiettivo**: mappare gli ID in indici consecutivi, così da usare un `vector` come lista di adiacenza.
 - **Input**: `edge_frequencies` (precondizione: `count_frequencies()` già chiamata).
 - **Output**: `id_to_index`, `index_to_id` e `adj` popolati; `edge_frequencies` svuotata.
-- **Strutture dati**: `id_to_index` (`std::unordered_map<int,int>`), `index_to_id` (`std::vector<int>`), `adj` (`std::vector<std::vector<std::pair<int,int>>>`, con gli **indici interni** dei vicini e le frequenze come pesi).
+- **Strutture dati**: `id_to_index` (`std::unordered_map<int,int>`), `index_to_id` (`std::vector<int>`), `adj` (`std::vector<std::vector<std::pair<int,int>>>`, con gli indici interni dei vicini e le frequenze come pesi).
 - **Specifiche funzionali**:
   - le strutture vengono azzerate all'inizio, per evitare archi duplicati se la funzione è chiamata due volte;
   - per ogni arco `(u,v)` con frequenza `f` si ottengono i due indici con `get_or_create_index()` e si aggiunge `(v,f)` in `adj[u]` e `(u,f)` in `adj[v]`;
