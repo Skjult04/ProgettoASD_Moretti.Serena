@@ -24,7 +24,7 @@ bool parse_as(const char* begin, const char* end, int& out) {
 // ---------------------------------------------------------------------------
 // AsGraph1: lettura del file e conteggio delle frequenze
 // ---------------------------------------------------------------------------
-////Questa funzione apre il file di testo contenente i dati di internet.
+//Questa funzione apre il file di testo contenente i dati di internet.
 void AsGraph::count_frequencies(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open())
@@ -87,4 +87,52 @@ void AsGraph::count_frequencies(const std::string& filename) {
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// AsGraph2: mappatura degli ID e costruzione della lista di adiacenza
+// ---------------------------------------------------------------------------
+
+//Questa funzione ausiliaria prende l'ID reale di un Autonomous System (as_number) 
+//e restituisce un indice intero compatto e sequenziale (0, 1, 2,...) 
+//creandolo se non esiste ancora
+int AsGraph::get_or_create_index(int as_number) {
+    
+    //Cerca as_number in id_to_index (che associa l'ID reale dell'AS al suo indice interno)
+    auto it = id_to_index.find(as_number);
+    //Se l'ID è già presente, restituisce l'indice associato.
+    if (it != id_to_index.end()) return it->second;
+
+    int new_index = static_cast<int>(index_to_id.size());//conversione in int
+    id_to_index[as_number] = new_index;
+    index_to_id.push_back(as_number);
+    adj.emplace_back();
+    return new_index;
+}
+
+//conversione di edge_frequencies nella struttura dati finale del grafo (la lista di adiacenza adj).
+void AsGraph::construct_graph() {
+    // Ripartenza pulita: evita archi duplicati se la funzione è chiamata due volte.
+    id_to_index.clear();
+    index_to_id.clear();
+    adj.clear();
+
+    //Avvia un ciclo for per scorrere ogni coppia chiave-valore all'interno della tabella hash edge_frequencies.
+    for (const auto& entry : edge_frequencies) {
+        //Estrae gli ID reali degli AS u e v
+        int u_id = entry.first.first;
+        int v_id = entry.first.second;
+        int freq = entry.second;
+        
+        //Converte gli ID reali u_id e v_id nei rispettivi indici interni contigui u e v
+        int u = get_or_create_index(u_id);
+        int v = get_or_create_index(v_id);
+
+        //Aggiunge l'arco in entrambe le direzioni nella lista di adiacenza adj 
+        adj[u].push_back({v, freq});
+        adj[v].push_back({u, freq});
+    }
+
+    // Le frequenze ora sono nella lista di adiacenza: libera anche i bucket.
+    std::unordered_map<std::pair<int, int>, int, EdgeHash>().swap(edge_frequencies);
 }
