@@ -1,6 +1,6 @@
 #include "AsGraph.hpp"
-#include <algorithm>//Serve per usare std::find
-#include <charconv> ////Serve per usare la funzione std::from_chars
+#include <algorithm>//Serve per usare std::find. std::min e std::max
+#include <charconv> //Serve per usare la funzione std::from_chars
 #include <fstream>
 #include <stdexcept>
 #include <system_error>
@@ -34,7 +34,7 @@ void AsGraph::count_frequencies(const std::string& filename) {
     while (std::getline(file, line)) {
         if (line.empty() || line[0] == '#') continue;
 
-        ////Inizializza un puntatore a caratteri begin che punta al primo elemento della stringa in memoria (line.data())
+        //Inizializza un puntatore a caratteri begin che punta al primo elemento della stringa in memoria (line.data())
         const char* begin = line.data();
         const char* end = begin + line.size();
         
@@ -135,4 +135,99 @@ void AsGraph::construct_graph() {
 
     // Le frequenze ora sono nella lista di adiacenza: libera anche i bucket.
     std::unordered_map<std::pair<int, int>, int, EdgeHash>().swap(edge_frequencies);
+}
+
+// ---------------------------------------------------------------------------
+// AsGraph3: estrazione della componente connessa più grande (LCC)
+// ---------------------------------------------------------------------------
+void AsGraph::extract_lcc() {
+
+    //Numero totale dei nodi attuali nel grafo leggendo la dimensione delle liste di adiacenza (adj).
+    const int n = static_cast<int>(adj.size());
+    if (n == 0) return;
+
+    // 1. BFS da ogni nodo non visitato; si tiene la componente più grande.
+    //    "current" funge sia da coda (con indice head) sia da elenco dei nodi.
+    std::vector<char> visited(n, 0);
+    std::vector<int> largest, current;
+
+    for (int start = 0; start < n; ++start) {
+        if (visited[start]) continue;
+
+        //Svuota il vettore current per iniziare la visita di una nuova componente
+        current.clear();
+        current.push_back(start);
+        visited[start] = 1;
+
+        // Implementazione efficiente di una BFS usando un array dinamico come coda.
+        for (size_t head = 0; head < current.size(); ++head) {
+            int u = current[head];
+
+            //Scorre tutti i vicini del nodo u.
+            for (const auto& edge : adj[u]) {
+                int next = edge.first;
+                if (!visited[next]) {
+                    visited[next] = 1;
+                    current.push_back(next);
+                }
+            }
+        }
+
+        if (current.size() > largest.size()) largest.swap(current);
+    }
+
+    // 2. Ricostruzione delle strutture dati con indici compatti 0..|LCC|-1.
+    const size_t m = largest.size();
+    std::vector<int> old_to_new(n, -1);
+    std::vector<int> new_index_to_id;
+    std::unordered_map<int, int> new_id_to_index;
+    new_index_to_id.reserve(m);
+    new_id_to_index.reserve(m);
+
+    //Cicla su ciascun nodo della LCC (dove i diventerà il nuovo indice [0...m-1]
+    for (size_t i = 0; i < m; ++i) {
+        int old_idx = largest[i];
+        int original_id = index_to_id[old_idx];
+
+        // Salva la conversione dal vecchio indice a quello nuovo (i)
+        old_to_new[old_idx] = static_cast<int>(i);
+        new_index_to_id.push_back(original_id);
+        new_id_to_index[original_id] = static_cast<int>(i);
+    }
+    //Crea le nuove liste di adiacenza per soli m nodi
+    std::vector<std::vector<std::pair<int, int>>> new_adj(m);
+    for (size_t i = 0; i < m; ++i) {
+        const auto& old_neighbors = adj[largest[i]];
+        new_adj[i].reserve(old_neighbors.size());
+
+        //Scorre ogni arco uscente del vecchio nodo.
+        for (const auto& edge : old_neighbors)
+
+            //Aggiunge alla nuova lista di adiacenza l'arco ri-mappato
+            new_adj[i].push_back({old_to_new[edge.first], edge.second});
+    }
+
+    // 3. Sostituzione delle vecchie strutture.
+
+    //Sposta le nuove strutture al posto delle vecchie, liberando la memoria delle vecchie strutture.
+    adj = std::move(new_adj);
+    id_to_index = std::move(new_id_to_index);
+    index_to_id = std::move(new_index_to_id);
+}
+
+// ---------------------------------------------------------------------------
+// Getter
+// ---------------------------------------------------------------------------
+
+//Somma il numero totale di elementi presenti in adj e divide per 2.
+int AsGraph::count_unique_edges() const {
+    size_t total = 0;
+    for (const auto& neighbors : adj) total += neighbors.size();
+    return static_cast<int>(total / 2);  // ogni arco compare due volte
+}
+
+//Cerca un AS tramite il suo numero univoco (as_number) all'interno della mappa id_to_index.
+int AsGraph::get_index(int as_number) const {
+    auto it = id_to_index.find(as_number);
+    return (it == id_to_index.end()) ? -1 : it->second;
 }
