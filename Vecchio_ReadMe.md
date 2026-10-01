@@ -25,28 +25,28 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti qua
 
 ### Strutture dati
 
-Le tabelle hash non usano `std::unordered_map`: sono implementate seguendo il dizionario visto a lezione (hash universale + liste di trabocco), estese in modo da associare un valore alla chiave.
-
-- **`UniversalHash`**: `h(x) = ((a·x + b) mod p) mod m`, con `p = 998244353` primo, `a ∈ [1, p-1]` e `b ∈ [0, p-1]` casuali. La chiave viene ridotta modulo `p` prima del prodotto, così `a·(x mod p) < 2^60` e non c'è overflow in `long long`.
-- **`IdIndexTable`** (tabella hash `int → int`): usata per `id_to_index`, ID originale dell'AS → indice interno `0..V-1`. Ogni bucket è un `vector` di coppie `(chiave, valore)`. Operazioni: `cerca(chiave)` (restituisce `-1` se assente) e `inserisci(chiave, valore)`.
-- **`EdgeTable`** (tabella hash `long long → int`): usata per `edge_frequencies`, arco → frequenza. L'arco `(u,v)` con `u < v` è codificato in una sola chiave `u · 2^32 + v`, così l'hash universale della lezione si applica a un intero senza bisogno di hash per coppie. Operazioni: `incrementa(chiave)` (crea l'arco con frequenza 1 oppure aggiunge 1) e accesso ai bucket in sola lettura, per scorrere tutti gli archi. È temporanea: viene svuotata al termine di `construct_graph()`.
-- **Rehash**: entrambe le tabelle tengono il numero `n` di elementi; quando `n > m` raddoppiano i bucket (`rehash(2m)`) estraendo nuovi `a` e `b`, come nel `rehash(newM)` della lezione. Il fattore di carico resta ≤ 1, quindi non serve conoscere in anticipo il numero di archi.
+- **Tabelle hash (`std::unordered_map`)**
+  - `edge_frequencies`: `unordered_map<pair<int,int>, int, EdgeHash>`, accumula la frequenza di ogni arco in tempo medio O(1). È temporanea: viene svuotata al termine di `construct_graph()`.
+  - `id_to_index`: ID originale dell'AS → indice interno `0..V-1`.
 - **Vettore dinamico (`std::vector`)**
   - `index_to_id`: indice interno → ID originale (mappatura inversa).
 - **Lista di adiacenza** (`std::vector<std::vector<std::pair<int,int>>>`)
   - `adj`: struttura principale del grafo; `adj[u]` contiene le coppie `(indice_vicino, peso)`. Rispetto a una matrice di adiacenza occupa spazio O(V+E) invece di O(V²) e rende immediate le visite del grafo.
 
+### Tipi e funtori ausiliari
+
+- `EdgeHash`: funtore che calcola l'hash di una `std::pair<int,int>` (la libreria standard non ne fornisce uno) con la formula stile Boost e la costante `0x9e3779b9`. Non riordina la coppia: la chiave va inserita già ordinata (vedi invarianti).
+
 ### Invarianti
 
-- Ogni chiave di `edge_frequencies` è `encode(min(u,v), max(u,v))` con `u != v`, quindi `(u,v)` e `(v,u)` sono lo stesso arco.
-- Ogni chiave compare una sola volta nella tabella in cui è memorizzata.
-- `id_to_index.cerca(index_to_id[i]) == i` per ogni `i`.
+- Ogni chiave di `edge_frequencies` è `(min(u,v), max(u,v))` con `u != v`, quindi `(u,v)` e `(v,u)` sono lo stesso arco.
+- `id_to_index[index_to_id[i]] == i` per ogni `i`.
 - `adj.size() == index_to_id.size()` e ogni arco compare nelle liste di entrambi gli estremi con lo stesso peso.
 - Dopo `extract_lcc()` gli indici sono compatti (`0..V'-1`) e il grafo è connesso.
 
 ### Complessità attesa
 
-Con `L` lunghezza totale dei cammini letti, `V` nodi ed `E` archi distinti: parsing O(L) in media (ogni `incrementa` costa O(1) in media, ammortizzato grazie al rehash), costruzione O(E) in media, estrazione della LCC O(V+E). Spazio: O(E) temporaneo per `edge_frequencies`, O(V+E) per `adj`.
+Con `L` lunghezza totale dei cammini letti, `V` nodi ed `E` archi distinti: parsing O(L) in media, costruzione O(E) in media, estrazione della LCC O(V+E). Spazio: O(E) temporaneo per `edge_frequencies`, O(V+E) per `adj`.
 
 ### Dipendenze
 
@@ -59,15 +59,30 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 - **Obiettivo**: leggere il file riga per riga, isolare la sequenza di AS e contare quante volte compare ogni arco.
 - **Input**: nome del file (formati descritti sopra).
 - **Output**: `edge_frequencies` riempita; un'eccezione `std::runtime_error` se il file non si apre.
-- **Strutture dati**: `edge_frequencies` (`EdgeTable`).
+- **Strutture dati**: `edge_frequencies` (tabella hash con `EdgeHash`).
 - **Specifiche funzionali**:
+  - le righe vuote e quelle che iniziano con `#` vengono ignorate;
+  - una riga senza spazi è nel formato a coppie e incrementa di 1 la frequenza dell'arco `AS1-AS2`;
+  - in una riga con spazi, il cammino è il secondo campo; per ogni coppia di AS consecutivi `(u,v)` la frequenza dell'arco viene incrementata di 1;
+  - grafo non orientato: la coppia viene ordinata (`min`, `max`) prima di essere salvata, così `(u,v)` e `(v,u)` non sono contati come archi separati;
+  - self-loop: si controlla `u != v` prima di incrementare; ciò elimina anche i duplicati consecutivi dovuti al prepending (es. `701|701|3479`);
+  - un token non valido (vuoto, non numerico, negativo o fuori dal range di `int`) interrompe il cammino in quel punto: non vengono creati archi tra gli AS ai due lati;
+  - chiamate successive sommano le frequenze.
+- **Complessità**: O(L) in media.
 
 ### Sotto-modulo AsGraph2: mappatura degli ID e costruzione del grafo
 
 - **Obiettivo**: mappare gli ID in indici consecutivi, così da usare un `vector` come lista di adiacenza.
 - **Input**: `edge_frequencies` (precondizione: `count_frequencies()` già chiamata).
 - **Output**: `id_to_index`, `index_to_id` e `adj` popolati; `edge_frequencies` svuotata.
-- **Strutture dati**: `id_to_index` (`IdIndexTable`), `index_to_id` (`std::vector<int>`), `adj` (`std::vector<std::vector<std::pair<int,int>>>`, con gli indici interni dei vicini e le frequenze come pesi).
+- **Strutture dati**: `id_to_index` (`std::unordered_map<int,int>`), `index_to_id` (`std::vector<int>`), `adj` (`std::vector<std::vector<std::pair<int,int>>>`, con gli indici interni dei vicini e le frequenze come pesi).
+- **Specifiche funzionali**:
+  - le strutture vengono azzerate all'inizio, per evitare archi duplicati se la funzione è chiamata due volte;
+  - per ogni arco `(u,v)` con frequenza `f` si ottengono i due indici con `get_or_create_index()` e si aggiunge `(v,f)` in `adj[u]` e `(u,f)` in `adj[v]`;
+  - inserimento dei nodi: `get_or_create_index()` restituisce l'indice se l'ID è già noto; altrimenti assegna il prossimo indice libero, aggiorna `id_to_index` e `index_to_id` e aggiunge una lista vuota a `adj`;
+  - l'assegnazione degli indici dipende dall'ordine di iterazione della tabella hash, quindi non è riproducibile tra implementazioni diverse; i risultati del progetto non dipendono dagli indici;
+  - al termine `edge_frequencies` viene svuotata e la memoria dei suoi bucket rilasciata.
+- **Complessità**: O(E) in media.
 
 ### Sotto-modulo AsGraph3: estrazione della componente connessa più grande (LCC)
 
@@ -75,6 +90,14 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 - **Input**: `adj`, `id_to_index`, `index_to_id` (precondizione: `construct_graph()` già chiamata).
 - **Output**: le stesse tre strutture, ricostruite sulla sola LCC con indici compatti `0..V'-1`. È il grafo che viene passato al modulo MiniMax.
 - **Strutture dati**: vettore `visited` (uno per nodo), vettore usato come coda per la BFS, vettore `old_to_new` (vecchio indice → nuovo indice, `-1` se il nodo non fa parte della LCC).
+- **Specifiche funzionali**:
+  - si itera su tutti i nodi; per ogni nodo non visitato si lancia una BFS che raccoglie la sua componente;
+  - si sceglie la BFS iterativa per evitare di esaurire lo stack su grafi molto grandi;
+  - viene tenuta la componente con più nodi; a parità, la prima incontrata;
+  - se il grafo è vuoto, la funzione non fa nulla;
+  - la ricostruzione conserva i pesi e l'ordine dei vicini, e aggiorna `id_to_index` e `index_to_id` in modo coerente con i nuovi indici;
+  - dopo la chiamata, `get_index()` restituisce `-1` per gli AS esclusi dalla LCC.
+- **Complessità**: O(V+E) tempo, O(V+E) spazio aggiuntivo.
 
 ---
 
@@ -109,3 +132,4 @@ L'interazione fra i moduli avviene in maniera sequenziale.
 - L'input, rielaborato da AsGraph, viene passato a MiniMax tramite `get_adj()`. MiniMax lo usa per la costruzione dell'MST e il pre-calcolo delle tabelle per il Binary Lifting. Le query arrivano con gli ID originali degli AS e vengono tradotte con `get_index()`; i risultati si riportano agli ID originali con `get_original_id()`.
 - Da definire l'interazione con il terzo modulo.
 - Il quarto modulo interroga AsGraph per ottenere il numero di nodi e di archi (`count_nodes()`, `count_unique_edges()`) e misura i tempi di esecuzione di tutti i moduli. L'istogramma delle frequenze si ricava da `get_adj()` contando ogni arco una sola volta (ad esempio solo quando `v > u`), perché `edge_frequencies` viene svuotata dopo la costruzione del grafo.
+    
