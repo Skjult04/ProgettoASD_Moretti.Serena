@@ -61,6 +61,16 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 - **Output**: `edge_frequencies` riempita; un'eccezione `std::runtime_error` se il file non si apre.
 - **Strutture dati**: `edge_frequencies` (`EdgeTable`).
 - **Specifiche funzionali**:
+  - le righe vuote e quelle che iniziano con `#` vengono ignorate;
+  - una riga senza spazi è nel formato a coppie e registra un'occorrenza dell'arco `AS1-AS2`;
+  - in una riga con spazi, il cammino è il secondo campo; per ogni coppia di AS consecutivi `(u,v)` si registra un'occorrenza dell'arco;
+  - la registrazione è affidata a `add_occurrence(u, v)`, che:
+    - scarta i self-loop (`u == v`), eliminando anche i duplicati consecutivi dovuti al prepending (es. `701|701|3479`);
+    - ordina la coppia (`min`, `max`) prima di codificarla, così `(u,v)` e `(v,u)` non sono contati come archi separati;
+    - chiama `edge_frequencies.incrementa()`;
+  - un token non valido (vuoto, non numerico, negativo o fuori dal range di `int`) interrompe il cammino in quel punto: non vengono creati archi tra gli AS ai due lati;
+  - chiamate successive sommano le frequenze.
+- **Complessità**: O(L) in media.
 
 ### Sotto-modulo AsGraph2: mappatura degli ID e costruzione del grafo
 
@@ -68,6 +78,13 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 - **Input**: `edge_frequencies` (precondizione: `count_frequencies()` già chiamata).
 - **Output**: `id_to_index`, `index_to_id` e `adj` popolati; `edge_frequencies` svuotata.
 - **Strutture dati**: `id_to_index` (`IdIndexTable`), `index_to_id` (`std::vector<int>`), `adj` (`std::vector<std::vector<std::pair<int,int>>>`, con gli indici interni dei vicini e le frequenze come pesi).
+- **Specifiche funzionali**:
+  - le strutture vengono azzerate all'inizio, per evitare archi duplicati se la funzione è chiamata due volte;
+  - per ogni arco `(u,v)` con frequenza `f`, scorrendo i bucket di `edge_frequencies`, si decodificano gli ID e si ottengono i due indici con `get_or_create_index()`; poi si aggiunge `(v,f)` in `adj[u]` e `(u,f)` in `adj[v]`;
+  - inserimento dei nodi: `get_or_create_index()` restituisce l'indice se l'ID è già noto; altrimenti assegna il prossimo indice libero, lo inserisce in `id_to_index`, lo aggiunge a `index_to_id` e aggiunge una lista vuota a `adj`;
+  - l'assegnazione degli indici dipende dall'ordine in cui si scorrono i bucket, che cambia con i parametri casuali dell'hash; i risultati del progetto non dipendono dagli indici;
+  - al termine `edge_frequencies` viene sostituita da una tabella vuota e la memoria rilasciata.
+- **Complessità**: O(E) in media.
 
 ### Sotto-modulo AsGraph3: estrazione della componente connessa più grande (LCC)
 
@@ -75,6 +92,14 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 - **Input**: `adj`, `id_to_index`, `index_to_id` (precondizione: `construct_graph()` già chiamata).
 - **Output**: le stesse tre strutture, ricostruite sulla sola LCC con indici compatti `0..V'-1`. È il grafo che viene passato al modulo MiniMax.
 - **Strutture dati**: vettore `visited` (uno per nodo), vettore usato come coda per la BFS, vettore `old_to_new` (vecchio indice → nuovo indice, `-1` se il nodo non fa parte della LCC).
+- **Specifiche funzionali**:
+  - si itera su tutti i nodi; per ogni nodo non visitato si lancia una BFS che raccoglie la sua componente;
+  - si sceglie la BFS iterativa per evitare di esaurire lo stack su grafi molto grandi;
+  - viene tenuta la componente con più nodi; a parità, la prima incontrata;
+  - se il grafo è vuoto, la funzione non fa nulla;
+  - la ricostruzione conserva i pesi e l'ordine dei vicini, e ricostruisce `id_to_index` e `index_to_id` in modo coerente con i nuovi indici;
+  - dopo la chiamata, `get_index()` restituisce `-1` per gli AS esclusi dalla LCC.
+- **Complessità**: O(V+E) tempo in media (la ricostruzione di `id_to_index` costa O(V) in media), O(V+E) spazio aggiuntivo.
 
 ---
 
