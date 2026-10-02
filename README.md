@@ -137,7 +137,7 @@ Costruzione: O(m log m) per Kruskal (dominato dall'ordinamento), O(n) per l'orie
 
 ### Dipendenze
 
-MiniMax dipende da AsGraph.
+MiniMax dipende da AsGraph solo tramite `get_adj()`. La funzione `query()` lavora sugli indici interni: la traduzione da e verso gli As originali e gli indici interi usa `get_index()` e `get_original_id()` di AsGraph.
 
 ### Sotto-modulo MiniMax1: UnionFind
 
@@ -172,6 +172,10 @@ MiniMax dipende da AsGraph.
 ### Sotto-modulo MiniMax4: buildBinaryLifting
 
 - **Obiettivo**: pre-calcolare le tabelle `ancestor` e `maxWeight` per risalire nell'albero di 2^k livelli e ricordare il massimo peso incontrato.
+
+- **Input**:Gli archi orientati prodotti da MiniMax3
+
+- **Output**: `ancestor`, `Maxweight`, `maxLog`
 
 ### Sotto-modulo MiniMax5: query
 
