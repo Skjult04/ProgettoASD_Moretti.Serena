@@ -21,7 +21,8 @@ private:
 	long long p, a, b;
 
 public:
-	UniversalHash(long long _p = 998244353)
+	
+UniversalHash(long long _p = 998244353)
 		: p(_p), a(rand() % (_p - 1) + 1), b(rand() % _p) {}
 
 	//La riduzione preventiva x % p 
@@ -133,6 +134,7 @@ private:
 	int get_or_create_index(int as_number);
 
 public:
+void print_graph_debug() const;
 	// AsGraph1: legge il file e accumula in edge_frequencies la frequenza degli
 	// archi. Chiamate successive sommano le frequenze.
 	void count_frequencies(const std::string& filename);
