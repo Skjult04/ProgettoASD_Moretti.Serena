@@ -105,13 +105,77 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 
 ## 2. Modulo MiniMax
 
-- **Compiti**: ordinamento degli archi per frequenza, esecuzione dell'algoritmo di Kruskal tramite Union-Find per costruire l'MST, pre-calcolo delle tabelle per il Binary Lifting.
-- **Obiettivi**: ricerca del cammino minimax ottimo e calcolo del costo tra qualsiasi coppia di nodi in tempo logaritmico.
-- **Input**: la lista di adiacenza della LCC fornita da `AsGraph::get_adj()`.
-- **Strutture dati**:
-  - lista di archi;
-  - Union-Find;
-  - tabelle per il Binary Lifting.
+**Compiti**: costruzione dell'MST della LCC con l'algoritmo di Kruskal (ordinamento degli archi per frequenza e insiemi disgiunti tramite Union-Find), orientamento dell'MST da una radice e pre-calcolo delle tabelle per il Binary Lifting, risposta alle query di costo minimax.
+
+**Obiettivi**: calcolare il costo del cammino minimax ottimo tra qualsiasi coppia di nodi in tempo logaritmico, dopo un pre-calcolo di costo O(m log m).
+
+**Idea di fondo**: dati due nodi u e v, il costo minimax ottimo è il massimo peso degli archi sull'unico cammino da u a v nell'MST. Di conseguenza non serve Dijkstra: basta costruire l'MST una volta e interrogarlo. Se più archi hanno lo stesso peso, l'MST non è unico, ma il costo minimax calcolato è sempre lo stesso.
+
+**Input**: la lista di adiacenza della LCC fornita da `AsGraph::get_adj()` (precondizione: grafo connesso e `adj` simmetrica, con lo stesso peso nelle liste dei due estremi).
+
+**Output**: un oggetto `MiniMax` che espone `query(u, v)`, dove `u` e `v` sono indici interni, e `countMstEdges()`.
+
+### Strutture dati
+
+- `mst`: `std::vector<Edge>`, con `Edge = {u, v, w}`, gli n-1 archi dell'MST.
+- `UnionFind`: due vettori, `parent` (padre nell'albero dell'insieme) e `setSize` (dimensione dell'insieme, valida solo per le radici).
+- `depth`: `std::vector<int>`, profondità di ogni nodo nell'MST radicato.
+- `ancestor`: `std::vector<std::vector<int>>`, dove `ancestor[k][v]` è l'antenato di `v` a distanza 2^k (`NIL = -1` se non esiste).
+- `maxWeight`: `std::vector<std::vector<int>>`, dove `maxWeight[k][v]` è il massimo peso tra gli archi attraversati risalendo da `v` di 2^k livelli.
+
+### Invarianti
+
+- `mst` contiene esattamente n-1 archi e forma un albero che copre tutti i nodi (perché la LCC è connessa).
+- Ogni nodo appartiene a esattamente un insieme dell'Union-Find, rappresentato dalla radice del suo albero di puntatori.
+- `ancestor[0][v]` è il padre di `v` e `ancestor[0][radice] == NIL`.
+- `maxWeight[0][v]` è il peso dell'arco `(ancestor[0][v], v)`.
+- `maxWeight[k+1][v] == max(maxWeight[k][v], maxWeight[k][ancestor[k][v]])` quando `ancestor[k][v] != NIL`.
+
+### Complessità attesa
+
+Costruzione: O(m log m) per Kruskal (dominato dall'ordinamento), O(n) per l'orientamento dell'MST, O(n log n) per le tabelle del Binary Lifting. Query: O(log n). Spazio: O(m) temporaneo per la lista degli archi, O(n log n) per `ancestor` e `maxWeight`.
+
+### Dipendenze
+
+MiniMax dipende da AsGraph.
+
+### Sotto-modulo MiniMax1: UnionFind
+
+**Obiettivo**: gestire gli insiemi disgiunti per Kruskal, realizzando le operazioni `Appartieni` e `Unisci` dello pseudocodice visto a lezione.
+
+**Input**: il numero di nodi n (alla creazione); coppie di nodi per le operazioni.
+
+**Output**: `sameSet(u, v)` dice se i due nodi sono nello stesso insieme; `unite(u, v)` fonde i due insiemi.
+
+**Strutture dati**: `parent`, `setSize` (vettori di int).
+
+### Sotto-modulo MiniMax2: minimaxKruskal
+
+**Obiettivo**: costruire l'MST, cioè la lista `mst` dello pseudocodice di Kruskal.
+
+**Input**: `adj` della LCC.
+
+**Output**: `mst` con n-1 archi `(u, v, peso)`.
+
+**Strutture dati**: lista temporanea degli archi, `UnionFind`, `mst`.
+
+### Sotto-modulo MiniMax3: rootTree
+
+**Obiettivo**: orientare l'MST a partire da una radice e calcolare la profondità dei nodi.
+
+**Input**: `mst` e la radice (indice 0).
+
+**Output**: il vettore degli archi orientati `(padre, figlio, peso)`, nel formato usato a lezione per costruire il Binary Lifting, e il vettore `depth`.
+
+**Strutture dati**: lista di adiacenza temporanea dell'MST, vettore `visited`, vettore `order` usato come coda.
+
+### Sotto-modulo MiniMax4: buildBinaryLifting
+
+**Obiettivo**: pre-calcolare le tabelle `ancestor` e `maxWeight` per risalire nell'albero di 2^k livelli e ricordare il massimo peso incontrato.
+
+### Sotto-modulo MiniMax5: query
+
+**Obiettivo**: restituire il costo minimax ottimo tra due nodi.
 
 ## 3. Modulo Count_Paths
 
