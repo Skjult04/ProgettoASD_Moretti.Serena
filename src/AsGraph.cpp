@@ -1,5 +1,4 @@
 #include "AsGraph.hpp"
-#include <iostream>  // std::cout, std::cerr
 #include <algorithm>  // std::find, std::min, std::max
 #include <charconv>   // std::from_chars
 #include <fstream>
@@ -255,23 +254,5 @@ int AsGraph::count_unique_edges() const {
     return static_cast<int>(total / 2);  // ogni arco compare due volte
 }
 
-void AsGraph::print_graph_debug() const {
-    const int n = static_cast<int>(adj.size());
-    std::cout << "Numero totale di nodi AS: " << n << "\n";
-    
-    for (int i = 0; i < n; ++i) {
-        // index_to_id[i] ci dà il vero AS Number partendo dall'indice interno 'i'
-        std::cout << "Nodo AS " << index_to_id[i] << " (indice interno " << i << ") e' collegato a:\n";
-        
-        for (const auto& edge : adj[i]) {
-            int neighbor_internal_index = edge.first;
-            int frequency = edge.second;
-            int neighbor_as = index_to_id[neighbor_internal_index];
-            
-            std::cout << "  -> AS " << neighbor_as 
-                      << " (frequenza: " << frequency << ")\n";
-        }
-    }
-}
 
 
