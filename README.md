@@ -46,7 +46,7 @@ Le tabelle hash non usano `std::unordered_map`: sono implementate seguendo il di
 
 ### Complessità attesa
 
-Con `L` lunghezza totale dei cammini letti, `V` nodi ed `E` archi distinti: parsing O(L) in media (ogni `incrementa` costa O(1) in media, ammortizzato grazie al rehash), costruzione O(E) in media, estrazione della LCC O(V+E). Spazio: O(E) temporaneo per `edge_frequencies`, O(V+E) per `adj`.
+Con `L` lunghezza totale dei cammini letti, `V` nodi ed `E` archi distinti: parsing O(L) in media (ogni `incrementa` costa O(1) in media, ammortizzato grazie al rehash), costruzione O(E) in media, estrazione della LCC O(V+E).
 
 ### Dipendenze
 
@@ -99,7 +99,7 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
   - se il grafo è vuoto, la funzione non fa nulla;
   - la ricostruzione conserva i pesi e l'ordine dei vicini, e ricostruisce `id_to_index` e `index_to_id` in modo coerente con i nuovi indici;
   - dopo la chiamata, `get_index()` restituisce `-1` per gli AS esclusi dalla LCC.
-- **Complessità**: O(V+E) tempo in media (la ricostruzione di `id_to_index` costa O(V) in media), O(V+E) spazio aggiuntivo.
+- **Complessità**: O(V+E) tempo in media (la ricostruzione di `id_to_index` costa O(V) in media).
 
 ---
 
@@ -137,7 +137,12 @@ Costruzione: O(m log m) per Kruskal (dominato dall'ordinamento), O(n) per l'orie
 
 ### Dipendenze
 
-MiniMax dipende da AsGraph solo tramite `get_adj()`. La funzione `query()` lavora sugli indici interni: la traduzione da e verso gli As originali e gli indici interi usa `get_index()` e `get_original_id()` di AsGraph.
+MiniMax non include AsGraph: il costruttore riceve la lista di adiacenza della LCC,
+di tipo `MiniMax::AdjList`, che il chiamante ottiene con `AsGraph::get_adj()`. Le query
+lavorano su indici interni: la traduzione da e verso gli ID originali degli AS usa
+`get_index()` e `get_original_id()` di AsGraph, quindi avviene fuori da MiniMax.
+
+--
 
 ### Sotto-modulo MiniMax1: UnionFind
 
@@ -149,6 +154,14 @@ MiniMax dipende da AsGraph solo tramite `get_adj()`. La funzione `query()` lavor
 
 - **Strutture dati**: `parent`, `setSize` (vettori di int).
 
+- **Specifiche funzionali**:
+  - all'inizio ogni nodo è un insieme a sé (`parent[i]=i`, `setSize[i]=1`)
+  -`Unisci(u,v)` rispetta la definizione data a lezione: se `S_u != S_v`, i due insiemi vengono eliminati e sostituiti da `S_u U S_v`; se `S_u==S_v` non si fa nulla. Nel codice ciò significa attaccare la radice dell'albero più piccolo a quella dell'albero più grande (union by size).
+  - `Appartieni(u,v)` confronta le radici dei due alberi; la ricerca della radice risale i puntatori ai padri.
+  - precondizione di `unite`: `sameSet(u,v) == false` (come in Kruskal,dove `Unisci` è chiamata solo se `!Appartieni` ).
+
+-**Complessità**: O(logn) per operazione, perché con union by size ogni albero ha altezza O(logn). Il costo totale per Kruskal è O(mlogn).
+
 ### Sotto-modulo MiniMax2: minimaxKruskal
 
 - **Obiettivo**: costruire l'MST, cioè la lista `mst` dello pseudocodice di Kruskal.
@@ -158,6 +171,13 @@ MiniMax dipende da AsGraph solo tramite `get_adj()`. La funzione `query()` lavor
 - **Output**: `mst` con n-1 archi `(u, v, peso)`.
 
 - **Strutture dati**: lista temporanea degli archi, `UnionFind`, `mst`.
+
+-**Specifiche funzionali**: 
+  -Nell'algoritmo di Kruskal ho utilizzato un vettore(`std::vector<Edge>`) di archi, che poi viene ordinato, al posto della coda di priorità. Scorrere il vettore ordinato per pesi crescenti equivale, infatti, ad estrarre il minimo ad ogni passo nella coda di priorità, con lo stesso costo nel caso peggiore (O(mlogm)).Il vantaggio di utilizzare un vettore consiste nella struttura più semplice e negli accessi sequenziali in memoria. Inoltre, ogni arco compare in adj due volte, quindi lo si inserisce nel vettore solo quando `u < v`.
+  -Nel secondo ciclo dell'algoritmo di Kruskal, si scorrono gli archi in ordine crescente di peso; se `!Appartieni(u,v)` si esegue Unisci(u,v) e si aggiunge l'arco a `mst` (`InserisciFondo`).
+  - il ciclo si interrompe appena mst contiene n-1 archi.
+
+-**Complessità**: O(mlogm) per l'ordinamento, più O(mlogn)per le operazioni di Union Find. Totale: O(mlogm)
 
 ### Sotto-modulo MiniMax3: rootTree
 
@@ -169,6 +189,14 @@ MiniMax dipende da AsGraph solo tramite `get_adj()`. La funzione `query()` lavor
 
 - **Strutture dati**: lista di adiacenza temporanea dell'MST, vettore `visited`, vettore `order` usato come coda.
 
+-**Specifiche funzionali**:
+  -si costruisce la lista di adiacenza dell'MST;
+  -BFS iterativa dalla radice: ogni arco che scopre un nuovo nodo viene registrato come `(padre, figlio, peso)` e `depth[figlio]=depth[padre]+1;
+  -la BFS iterativa evita di esaurire lo stack, come in AsGraph3
+
+-**Complessità**: O(n) tempo.
+
+
 ### Sotto-modulo MiniMax4: buildBinaryLifting
 
 - **Obiettivo**: pre-calcolare le tabelle `ancestor` e `maxWeight` per risalire nell'albero di 2^k livelli e ricordare il massimo peso incontrato.
@@ -177,9 +205,33 @@ MiniMax dipende da AsGraph solo tramite `get_adj()`. La funzione `query()` lavor
 
 - **Output**: `ancestor`, `Maxweight`, `maxLog`
 
+-**Strutture dati**: `ancestor`, `maxWeight` (tabelle `maxlog`x `n`)
+
+-**Specifiche funzionali**: 
+  -`maxLog` è calcolato come segue: si parte da 1 e si incrementa finché `maxLog`<=n;
+  - caso base: per ogni arco `(padre, figlio, peso)` si pone `ancestor[0][figlio]=padre` e `maxWeight[0][figlio]=peso`; per la radice `ancestor[0][radice]=NiL`;
+  -caso induttivo: `ancestor[k+1][v]=ancesto[k][ancestor[k][v]]` se `ancestor[k][v] != NIL`, altrimenti Nil; `maxWeight[k+1][v]=max(maxWeight[k][v], maxWeight[k][ancestor[k][v]])`. Nel caso `ancestor[k][v]==NIL`, `maxWeight[k+1][v]=maxWeight[k][v]`
+
+-**Complessità**: O(nlogn) tempo.
+
 ### Sotto-modulo MiniMax5: query
 
 - **Obiettivo**: restituire il costo minimax ottimo tra due nodi.
+
+-**Input**: due indici interni u e v.
+
+-**Output**: il costo minimax ottimo(0 se `u==v`); `NIL` se un indice non è valido (ad esempio -1, restituito da `get_index()` per un AS fuori dalla LCC).
+
+_**Strutture dati**: `depth`, `ancestor`, `maxWeight`.
+
+-**Specifiche funzionali**:
+  - si scambiano i nodi in modo che u sia il più profondo
+  - si porta u alla profondità di v risalendo di depth[u]-depth[v] livelli e aggiornando il massimo con`maxweight[k][u]` a ogni salto;
+  -se a questo punto u==v, il costo è il massimo accumulato;
+  - per `k` da `maxLog-1` a 0, se `ancestor[k][u] != ancestor[k][v]` si salta (si risale nell'albero di 2^k livelli) con entrambi i nodi, aggiornando il massimo con `maxWeight[k][u]` e `maxWeight[k][v]`;  
+  - al termine, u e v sono figli dello stesso nodo (il loro antenato comune più basso), quindi il costo finale è il massimo tra quello accumulato, `maxWeight[0][u]` e `maxWeight[0][v]`
+
+-**Complessità: O(logn) per query.
 
 ## 3. Modulo Count_Paths
 
