@@ -239,12 +239,27 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 - **Obiettivi**: eventuale implementazione della parte opzionale del codice.
 - **Strutture dati**: da definire.
 
-## 4. Modulo Experimental_Analysis
+## 4. Modulo ExperimentalAnalysis
 
-- **Compiti**: tracciamento dei tempi di esecuzione delle singole fasi e raccolta delle statistiche richieste (nodi, archi, distribuzione delle frequenze).
-- **Obiettivi**: analisi della complessità computazionale.
-- **Strutture dati**: `vector` per l'istogramma delle frequenze.
+- **Compiti**: 
+  -conteggio del numero di nodi e archi della LCC, distribuzione delle frequenze sugli archi (ossia il numero di archi del grafo di frequenza esattamente f);
+  -misura dei tempi di esecuzione delle singole fasi (lettura e conteggio delle frequenze, costruzione del grafo, estrazione della LCC, costruzione della struttura MiniMax) e delle query;
+  -esecuzione di un insieme di query minimax su coppie di nodi scelte in modo arbitrario, con raccolta dei costi ottimi ottenuti;
+  -verifica sperimentale della correttezza delle risposte di MiniMax, con un metodo indipendente dall'MST;
+  -stampa dei risultati;
 
+- **Obiettivi**:  documentare con dati reali il comportamento dei moduli AsGraph e MiniMax e confrontare i tempi misurati con la complessità attesa: lineare per la lettura e la costruzione del grafo, O(m log m) per l'MST, O(log n) per query.
+- **Strutture dati**:
+  - `vector<int>` come istogramma delle frequenze: la posizione `f` contiene il numero di archi con frequenza `f`;
+  - `vector<int>` con le coppie di nodi estratte a caso, generate con `rand()`;
+  - `vector<double>` per i tempi misurati, uno per ogni fase.
+
+-**Strumenti usati**:
+  - `<chrono>` per misurare i tempi;
+  -`rand()` per generare numeri casuali;
+  -visita BFS e ricerca booleana su funzioni monotone per la verifica.
+
+- **Idea della verifica**: il costo minimax tra `u` e `v` è il minimo `t` tale che `u` e `v` sono connessi usando solo archi di frequenza `≤ t`. La funzione "u e v sono connessi con archi `≤ t`" è booleana e monotona in `t`, quindi `t` si trova con una ricerca binaria sulle frequenze.A ogni passo della ricerca binaria, bisogna rispondere alla domanda: "u e v sono connessi usando solo archi di frequenza `≤ t`? Per rispondere, si fa una BFS partendo da u, con la regola aggiuntiva che gli archi di frequenza maggiore di t vengono ignorati. Se la visita raggiunge v, la risposta è sì, altrimenti è no. Il risultato va confrontato con `MiniMax::query(u, v)`.
 ---
 
 ## Interazione fra moduli
@@ -253,4 +268,6 @@ L'interazione fra i moduli avviene in maniera sequenziale.
 
 - L'input, rielaborato da AsGraph, viene passato a MiniMax tramite `get_adj()`. MiniMax lo usa per la costruzione dell'MST e il pre-calcolo delle tabelle per il Binary Lifting. Le query arrivano con gli ID originali degli AS e vengono tradotte con `get_index()`; i risultati si riportano agli ID originali con `get_original_id()`.
 - Da definire l'interazione con il terzo modulo.
-- Il quarto modulo interroga AsGraph per ottenere il numero di nodi e di archi (`count_nodes()`, `count_unique_edges()`) e misura i tempi di esecuzione di tutti i moduli. L'istogramma delle frequenze si ricava da `get_adj()` contando ogni arco una sola volta (ad esempio solo quando `v > u`), perché `edge_frequencies` viene svuotata dopo la costruzione del grafo.
+- ExperimentalAnalysis chiama in sequenza `count_frequencies()`, `construct_graph()`, `extract_lcc()` di AsGraph e il costruttore di MiniMax, misurando il tempo di ciascuna chiamata.
+- Dopo `extract_lcc()` legge da AsGraph `count_nodes()`, `count_unique_edges()` e `get_adj()`; l'istogramma delle frequenze si ricava da `get_adj()` contando ogni arco una sola volta (solo quando `v > u`), perché `edge_frequencies` viene svuotata dopo la costruzione del grafo.
+- Le query vengono eseguite su indici interni con `MiniMax::query()`; per riportare i risultati con gli ID originali degli AS si usa `get_original_id()`.
