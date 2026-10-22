@@ -326,7 +326,6 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 - **Obiettivi**: controllare MiniMax con un metodo indipendente dall'MST. Il campione è piccolo perché ogni verifica costa più di una query: richiede O(log F) BFS sull'intero grafo, con F numero di frequenze distinte.
 
 - **Strutture dati**: 
-
 - `distinctFreq` (da ExperimentalAnalysis2);
 - `std::vector<bool> visited`;
 - un `std::vector<int>` usato come coda con indice di testa, come nella BFS di AsGraph3.
