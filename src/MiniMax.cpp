@@ -98,3 +98,63 @@ auto MiniMax::rootTree(int root) -> vector<TreeEdge> {
     }
     return edges;
 }
+// MiniMax4
+void MiniMax::buildBinaryLifting(const vector<TreeEdge>& edges) {
+    maxLog = 1;
+    while ((1 << maxLog) <= n) {
+        maxLog++;
+    }
+
+    ancestor.assign(maxLog, vector<int>(n, NIL));
+    maxWeight.assign(maxLog, vector<int>(n, 0));
+
+    // caso base: ancestor[0][v] = padre di v
+    for (auto [parent, child, w] : edges) {
+        ancestor[0][child] = parent;
+        maxWeight[0][child] = w;
+    }
+
+    // ancestor[k+1][v] = ancestor[k][ancestor[k][v]], se esiste
+    for (auto k = 0; k + 1 < maxLog; k++) {
+        for (auto v = 0; v < n; v++) {
+            auto mid = ancestor[k][v];
+            if (mid == NIL) {
+                ancestor[k + 1][v] = NIL;
+                maxWeight[k + 1][v] = maxWeight[k][v];
+            } else {
+                ancestor[k + 1][v] = ancestor[k][mid];
+                maxWeight[k + 1][v] = max(maxWeight[k][v], maxWeight[k][mid]);
+            }
+        }
+    }
+}
+
+// MiniMax5
+int MiniMax::query(int u, int v) const {
+    if (u < 0 || v < 0 || u >= n || v >= n) return NIL;
+
+    auto cost = 0;
+    if (depth[u] < depth[v]) swap(u, v);
+
+    // 1) porto u alla profondità di v (come kthAncestor)
+    auto diff = depth[u] - depth[v];
+    for (auto k = 0; k < maxLog; k++) {
+        if (diff & (1 << k)) {
+            cost = max(cost, maxWeight[k][u]);
+            u = ancestor[k][u];
+        }
+    }
+    if (u == v) return cost;
+
+    // 2) risalgo insieme finché gli antenati differiscono
+    for (auto k = maxLog - 1; k >= 0; k--) {
+        if (ancestor[k][u] != ancestor[k][v]) {
+            cost = max({cost, maxWeight[k][u], maxWeight[k][v]});
+            u = ancestor[k][u];
+            v = ancestor[k][v];
+        }
+    }
+
+    // ora u e v sono figli dello stesso nodo (il loro antenato comune)
+    return max({cost, maxWeight[0][u], maxWeight[0][v]});
+}
