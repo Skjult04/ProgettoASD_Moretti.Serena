@@ -252,6 +252,7 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 
 - **Obiettivi**:  documentare con dati reali il comportamento dei moduli AsGraph e MiniMax e confrontare i tempi misurati con la complessità attesa: lineare per la lettura e la costruzione del grafo, O(m log m) per l'MST, O(log n) per query.
 - **Strutture dati**:
+
   - `vector<int>` come istogramma delle frequenze: la posizione `f` contiene il numero di archi con frequenza `f`;
   - `vector<int>` con le coppie di nodi estratte a caso, generate con `rand()`;
   - `vector<double>` per i tempi misurati, uno per ogni fase.
@@ -259,8 +260,8 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 - **Strumenti usati**:
 
   - `<chrono>` per misurare i tempi;
-  -`rand()` per generare numeri casuali;
-  -visita BFS e ricerca booleana su funzioni monotone per la verifica.
+  - `rand()` per generare numeri casuali;
+  - visita BFS e ricerca booleana su funzioni monotone per la verifica.
 
 - **Idea della verifica**: il costo minimax tra `u` e `v` è il minimo `t` tale che `u` e `v` sono connessi usando solo archi di frequenza `≤ t`. La funzione "u e v sono connessi con archi `≤ t`" è booleana e monotona in `t`, quindi `t` si trova con una ricerca binaria sulle frequenze.A ogni passo della ricerca binaria, bisogna rispondere alla domanda: "u e v sono connessi usando solo archi di frequenza `≤ t`? Per rispondere, si fa una BFS partendo da u, con la regola aggiuntiva che gli archi di frequenza maggiore di t vengono ignorati. Se la visita raggiunge v, la risposta è sì, altrimenti è no. Il risultato va confrontato con `MiniMax::query(u, v)`.
 
