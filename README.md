@@ -257,6 +257,7 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
   - `vector<double>` per i tempi misurati, uno per ogni fase.
 
 - **Strumenti usati**:
+
   - `<chrono>` per misurare i tempi;
   -`rand()` per generare numeri casuali;
   -visita BFS e ricerca booleana su funzioni monotone per la verifica.
@@ -285,7 +286,7 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 - **Strutture dati**:
 
   - `std::vector<int> histogram`, dove `histogram[f]` è il numero di archi con frequenza `f`; 
-  -`std::vector<int> distinctFreq`, le frequenze `f` con `histogram[f] > 0`, in ordine crescente.
+  - `std::vector<int> distinctFreq`, le frequenze `f` con `histogram[f] > 0`, in ordine crescente.
 
 - **Dipendenze**: AsGraph (`get_adj()`).
 
@@ -325,7 +326,7 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 
 - **Strutture dati**: 
 
--`distinctFreq` (da ExperimentalAnalysis2);
+- `distinctFreq` (da ExperimentalAnalysis2);
 - `std::vector<bool> visited`;
 - un `std::vector<int>` usato come coda con indice di testa, come nella BFS di AsGraph3.
 
