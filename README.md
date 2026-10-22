@@ -256,12 +256,90 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
   - `vector<int>` con le coppie di nodi estratte a caso, generate con `rand()`;
   - `vector<double>` per i tempi misurati, uno per ogni fase.
 
--**Strumenti usati**:
+- **Strumenti usati**:
   - `<chrono>` per misurare i tempi;
   -`rand()` per generare numeri casuali;
   -visita BFS e ricerca booleana su funzioni monotone per la verifica.
 
 - **Idea della verifica**: il costo minimax tra `u` e `v` è il minimo `t` tale che `u` e `v` sono connessi usando solo archi di frequenza `≤ t`. La funzione "u e v sono connessi con archi `≤ t`" è booleana e monotona in `t`, quindi `t` si trova con una ricerca binaria sulle frequenze.A ogni passo della ricerca binaria, bisogna rispondere alla domanda: "u e v sono connessi usando solo archi di frequenza `≤ t`? Per rispondere, si fa una BFS partendo da u, con la regola aggiuntiva che gli archi di frequenza maggiore di t vengono ignorati. Se la visita raggiunge v, la risposta è sì, altrimenti è no. Il risultato va confrontato con `MiniMax::query(u, v)`.
+
+- **Strutture dati**:
+  - `vector` per istogramma, tempi, coppie di query e frequenze distinte (dettagli nei sotto-moduli).
+
+### Sotto-modulo ExperimentalAnalysis1: statistiche del grafo
+
+- **Compiti**: rilevare numero di nodi e di archi del grafo prima e dopo l'estrazione della LCC.
+
+- **Obiettivi**: riportare il conteggio di nodi e archi e mostrare quale percentuale dei nodi e archi del grafo originario si trovano nella LCC
+
+- **Strutture dati**: i valori interi restituiti da `count_nodes()` e `count_unique_edges()`.
+
+- **Dipendenze**: AsGraph (`count_nodes()`, `count_unique_edges()`).
+
+### Sotto-modulo ExperimentalAnalysis2: distribuzione delle frequenze
+
+- **Compiti**: costruire l'istogramma delle frequenze degli archi della LCC e ricavarne alcuni valori riassuntivi (frequenza massima, numero di archi con frequenza 1).
+
+- **Obiettivi**: riportare la distribuzione delle frequenze e preparare l'elenco delle frequenze distinte usato dalla verifica.
+
+- **Strutture dati**:
+
+  - `std::vector<int> histogram`, dove `histogram[f]` è il numero di archi con frequenza `f`; 
+  -`std::vector<int> distinctFreq`, le frequenze `f` con `histogram[f] > 0`, in ordine crescente.
+
+- **Dipendenze**: AsGraph (`get_adj()`).
+
+### Sotto-modulo ExperimentalAnalysis3: misura dei tempi
+
+- **Compiti**: cronometrare con `<chrono>` le fasi `count_frequencies()`, `construct_graph()`, `extract_lcc()` e la costruzione dell'oggetto `MiniMax`.
+
+- **Obiettivi**: ottenere i tempi di esecuzione richiesti dalla traccia, fase per fase, da confrontare con le complessità attese.
+
+- **Strutture dati**: `std::vector<double>` con un tempo per ogni fase.
+
+- **Dipendenze**: AsGraph e MiniMax.
+
+
+### Sotto-modulo ExperimentalAnalysis4: esperimenti sulle query
+
+- **Compiti**:
+
+  - generare con `rand()` Q coppie di indici interni, eseguire le query con `MiniMax::query()` e cronometrare l'intero blocco; 
+  - raccogliere i costi ottimi ottenuti; 
+  - permettere anche una query su una coppia di AS scelta dall'utente, indicata con gli ID originali.
+
+- **Obiettivi**: riportare il costo ottimo minimax e il tempo medio per query (tempo del blocco diviso Q, perché la singola query è troppo breve per essere misurata da sola).
+
+- **Strutture dati**: 
+
+  - `std::vector<std::pair<int,int>> queries` con le coppie estratte; 
+  - `std::vector<int> costs` con i costi restituiti.
+
+- **Dipendenze**: AsGraph (`count_nodes()`, `get_index()`, `get_original_id()`), MiniMax (`query()`).
+
+### Sotto-modulo ExperimentalAnalysis5: verifica di correttezza
+
+- **Compiti**: per un campione ridotto delle coppie di Experimental_Analysis4, ricalcolare il costo minimax con ricerca binaria sulle frequenze distinte e BFS, e confrontarlo con la risposta di `MiniMax::query()`.
+
+- **Obiettivi**: controllare MiniMax con un metodo indipendente dall'MST. Il campione è piccolo perché ogni verifica costa più di una query: richiede O(log F) BFS sull'intero grafo, con F numero di frequenze distinte.
+
+- **Strutture dati**: 
+
+-`distinctFreq` (da ExperimentalAnalysis2);
+- `std::vector<bool> visited`;
+- un `std::vector<int>` usato come coda con indice di testa, come nella BFS di AsGraph3.
+
+- **Dipendenze**: AsGraph (`get_adj()`), ExperimentalAnalysis2 e 4.
+
+### Sotto-modulo ExperimentalAnalysis6: report dei risultati
+
+- **Compiti**: stampare in forma leggibile statistiche, istogramma, tempi, esito delle query e della verifica.
+
+- **Obiettivi**: presentare in un unico punto tutti i dati richiesti dalla traccia (esclusa la parte di Count_Paths).
+
+- **Strutture dati**: nessuna propria, bensì legge quelle degli altri sotto-moduli.
+
+- **Dipendenze**: dipende da tutti i sotto-moduli di ExperimentalAnalysis precedenti.
 ---
 
 ## Interazione fra moduli
