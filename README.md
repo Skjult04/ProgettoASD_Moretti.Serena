@@ -241,12 +241,14 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 
 ## 4. Modulo ExperimentalAnalysis
 
-- **Compiti**: 
-  -conteggio del numero di nodi e archi della LCC, distribuzione delle frequenze sugli archi (ossia il numero di archi del grafo di frequenza esattamente f);
-  -misura dei tempi di esecuzione delle singole fasi (lettura e conteggio delle frequenze, costruzione del grafo, estrazione della LCC, costruzione della struttura MiniMax) e delle query;
-  -esecuzione di un insieme di query minimax su coppie di nodi scelte in modo arbitrario, con raccolta dei costi ottimi ottenuti;
-  -verifica sperimentale della correttezza delle risposte di MiniMax, con un metodo indipendente dall'MST;
-  -stampa dei risultati;
+
+**Compiti**:
+
+- conteggio del numero di nodi e archi della LCC, distribuzione delle frequenze sugli archi (ossia il numero di archi del grafo di frequenza esattamente f);
+- misura dei tempi di esecuzione delle singole fasi (lettura e conteggio delle frequenze, costruzione del grafo, estrazione della LCC, costruzione della struttura MiniMax) e delle query;
+- esecuzione di un insieme di query minimax su coppie di nodi scelte in modo arbitrario, con raccolta dei costi ottimi ottenuti;
+- verifica sperimentale della correttezza delle risposte di MiniMax, con un metodo indipendente dall'MST;
+- stampa dei risultati.
 
 - **Obiettivi**:  documentare con dati reali il comportamento dei moduli AsGraph e MiniMax e confrontare i tempi misurati con la complessità attesa: lineare per la lettura e la costruzione del grafo, O(m log m) per l'MST, O(log n) per query.
 - **Strutture dati**:
