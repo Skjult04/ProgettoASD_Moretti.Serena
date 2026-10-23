@@ -88,3 +88,130 @@ void run_queries(const AsGraph& g, const MiniMax& mm, int Q,
 int query_by_id(const AsGraph& g, const MiniMax& mm, int as_u, int as_v) {
     return mm.query(g.get_index(as_u), g.get_index(as_v));
 }
+
+// ExperimentalAnalysis5: verifica di correttezza
+
+// true se v è raggiungibile da u usando solo archi di frequenza <= t.
+bool connected_upto(const AsGraph& g, int u, int v, int t,
+                    std::vector<char>& visited, std::vector<int>& queue) {
+    if (u == v) return true;
+
+    const auto& adj = g.get_adj();
+    std::fill(visited.begin(), visited.end(), 0);
+    queue.clear();
+    queue.push_back(u);
+    visited[u] = 1;
+
+    for (size_t head = 0; head < queue.size(); ++head) {
+        int x = queue[head];
+        for (const auto& [y, w] : adj[x]) {
+            if (w > t || visited[y]) continue;
+            if (y == v) return true;
+            visited[y] = 1;
+            queue.push_back(y);
+        }
+    }
+    return false;
+}
+
+// Precondizioni: distinctFreq non vuoto, u e v indici validi della LCC.
+int minimax_by_search(const AsGraph& g, const std::vector<int>& distinctFreq,
+                      int u, int v, std::vector<char>& visited,
+                      std::vector<int>& queue) {
+    // Senza questo controllo la ricerca restituirebbe distinctFreq[0].
+    if (u == v) return 0;
+
+    int lo = 0;
+    int hi = static_cast<int>(distinctFreq.size()) - 1;
+    while (lo < hi) {
+        int mid = (lo + hi) / 2;
+        if (connected_upto(g, u, v, distinctFreq[mid], visited, queue))
+            hi = mid;
+        else
+            lo = mid + 1;
+    }
+    return distinctFreq[lo];
+}
+
+// Numero di discordanze sulle prime min(S, Q) coppie (atteso: 0).
+int verify_queries(const AsGraph& g, const std::vector<int>& distinctFreq,
+                   const std::vector<std::pair<int, int>>& queries,
+                   const std::vector<int>& costs, int S) {
+    if (distinctFreq.empty() || queries.empty() || S <= 0) return 0;
+
+    const int limit = std::min(S, static_cast<int>(queries.size()));
+    std::vector<char> visited(g.count_nodes(), 0);
+    std::vector<int> queue;
+
+    int mismatches = 0;
+    for (int i = 0; i < limit; ++i) {
+        int expected = minimax_by_search(g, distinctFreq, queries[i].first,
+                                         queries[i].second, visited, queue);
+        if (expected != costs[i]) ++mismatches;
+    }
+    return mismatches;
+}
+
+// ExperimentalAnalysis6: report dei risultati
+
+void write_histogram_csv(const std::string& filename,
+                         const std::vector<std::pair<int, int>>& histogram) {
+    std::ofstream out(filename);
+    if (!out.is_open())
+        throw std::runtime_error("impossibile scrivere il file " + filename);
+    for (const auto& [f, c] : histogram) out << f << ',' << c << '\n';
+}
+
+void print_report(const GraphStats& full, const GraphStats& lcc,
+                  const std::vector<std::pair<int, int>>& histogram,
+                  const Timings& t, int Q, double queryMs,
+                  const std::vector<int>& costs, int S, int mismatches) {
+    std::cout << std::fixed << std::setprecision(2);
+
+    std::cout << "=== Grafo ===\n";
+    std::cout << "Grafo completo: " << full.nodes << " nodi, " << full.edges
+              << " archi\n";
+    std::cout << "LCC:            " << lcc.nodes << " nodi, " << lcc.edges
+              << " archi\n";
+    if (full.nodes > 0 && full.edges > 0) {
+        std::cout << "La LCC contiene il " << 100.0 * lcc.nodes / full.nodes
+                  << "% dei nodi e il " << 100.0 * lcc.edges / full.edges
+                  << "% degli archi\n";
+    }
+
+    if (lcc.edges > 0 && !histogram.empty()) {
+        const int fmax = histogram.back().first;
+        const int ones =
+            histogram.front().first == 1 ? histogram.front().second : 0;
+        std::cout << "\n=== Frequenze (LCC) ===\n";
+        std::cout << "Frequenza massima: " << fmax << "\n";
+        std::cout << "Archi con frequenza 1: " << ones << " ("
+                  << 100.0 * ones / lcc.edges << "%)\n";
+        std::cout << "Frequenze distinte: " << histogram.size()
+                  << " (istogramma completo in istogramma.csv)\n";
+    }
+
+    std::cout << "\n=== Tempi (ms) ===\n";
+    std::cout << "Lettura e conteggio frequenze: " << t.read << "\n";
+    std::cout << "Costruzione del grafo:         " << t.build << "\n";
+    std::cout << "Estrazione della LCC:          " << t.lcc << "\n";
+    std::cout << "Costruzione di MiniMax:        " << t.minimax << "\n";
+
+    if (Q > 0 && !costs.empty()) {
+        const auto [mn, mx] = std::minmax_element(costs.begin(), costs.end());
+        double sum = 0.0;
+        for (int c : costs) sum += c;
+
+        std::cout << "\n=== Query minimax ===\n";
+        std::cout << "Query eseguite: " << Q << "\n";
+        std::cout << "Costo ottimo minimo / massimo / medio: " << *mn << " / "
+                  << *mx << " / " << sum / costs.size() << "\n";
+        std::cout << "Tempo medio per query: " << queryMs * 1000.0 / Q
+                  << " us\n";
+        if (S > 0)
+            std::cout << "Verifica con BFS: " << mismatches
+                      << " discordanze su " << S << " query\n";
+        else
+            std::cout << "Verifica con BFS: non eseguita\n";
+    }
+}
