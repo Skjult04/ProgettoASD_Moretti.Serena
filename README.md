@@ -6,8 +6,8 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti qua
 
 1. **AsGraph**: costruzione del grafo AS pesato e non orientato ed estrazione della componente connessa più grande.
 2. **MiniMax**: struttura dati per rispondere alle query di cammino minimax.
-3. **Count_Paths**: parte opzionale (conteggio dei cammini a costo minimax ottimo).
-4. **Experimental_Analysis**: misure di tempo e statistiche sul grafo.
+3. **CountPaths**: parte opzionale (conteggio dei cammini a costo minimax ottimo).
+4. **ExperimentalAnalysis**: misure di tempo e statistiche sul grafo.
 
 ---
 
@@ -233,7 +233,7 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 
 - **Complessità**: O(logn) per query.
 
-## 3. Modulo Count_Paths
+## 3. Modulo CountPaths
 
 - **Compiti**: da definire.
 - **Obiettivi**: eventuale implementazione della parte opzionale del codice.
