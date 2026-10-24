@@ -215,3 +215,65 @@ void print_report(const GraphStats& full, const GraphStats& lcc,
             std::cout << "Verifica con BFS: non eseguita\n";
     }
 }
+// run_experiments
+
+void run_experiments(const std::string& filename, int Q, int S,
+                     unsigned int seed) {
+    // srand prima di creare AsGraph, che usa rand() per l'hash universale.
+    srand(seed);
+    AsGraph g;
+
+    Timings t{0.0, 0.0, 0.0, 0.0};
+    std::vector<std::pair<int, int>> histogram;
+    std::vector<int> distinctFreq;
+    std::vector<std::pair<int, int>> queries;
+    std::vector<int> costs;
+    double queryMs = 0.0;
+
+    auto t0 = std::chrono::steady_clock::now();
+    g.count_frequencies(filename);
+    t.read = ms_since(t0);
+
+    t0 = std::chrono::steady_clock::now();
+    g.construct_graph();
+    t.build = ms_since(t0);
+
+    const GraphStats full = compute_stats(g);
+
+    t0 = std::chrono::steady_clock::now();
+    g.extract_lcc();
+    t.lcc = ms_since(t0);
+
+    const GraphStats lcc = compute_stats(g);
+    if (lcc.nodes == 0) {
+        print_report(full, lcc, histogram, t, 0, 0.0, costs, 0, 0);
+        return;
+    }
+
+    build_histogram(g, histogram, distinctFreq);
+
+    t0 = std::chrono::steady_clock::now();
+    MiniMax mm(g.get_adj());
+    t.minimax = ms_since(t0);
+
+    run_queries(g, mm, Q, queries, costs, queryMs);
+
+    const int executed = static_cast<int>(queries.size());
+    const int verified = std::max(0, std::min(S, executed));
+    const int mismatches = verify_queries(g, distinctFreq, queries, costs, S);
+
+    write_histogram_csv("istogramma.csv", histogram);
+    print_report(full, lcc, histogram, t, executed, queryMs, costs, verified,
+                 mismatches);
+
+    // Query d'esempio con gli ID originali degli AS.
+    const int examples = std::min(5, executed);
+    if (examples > 0) std::cout << "\n=== Esempi ===\n";
+    for (int i = 0; i < examples; ++i) {
+        int as_u = g.get_original_id(queries[i].first);
+        int as_v = g.get_original_id(queries[i].second);
+        std::cout << "AS" << as_u << " -> AS" << as_v
+                  << ": costo minimax ottimo " << query_by_id(g, mm, as_u, as_v)
+                  << "\n";
+    }
+}
