@@ -36,7 +36,7 @@ private:
     struct TreeEdge { int parent, child, w; };
 
     int n;//numero di nodi nel grafo
-    int maxLog; //massima potenza di 2 necessaria per il Binary Lifting (log2(n))
+    int maxLog; // numero di livelli del Binary Lifting (⌊log2 n⌋ + 1)
     std::vector<Edge> mst;
     std::vector<int> depth;
     std::vector<std::vector<int>> ancestor;    // ancestor[k][v]

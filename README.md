@@ -27,7 +27,7 @@ Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti qua
 
 Le tabelle hash sono implementate seguendo il dizionario visto a lezione (hash universale + liste di trabocco), estese in modo da associare un valore alla chiave.
 
-- **`UniversalHash`**: `h(x) = ((a·x + b) mod p) mod m`, con `p = 998244353` primo, `a ∈ [1, p-1]` e `b ∈ [0, p-1]` casuali. La chiave viene ridotta modulo `p` prima del prodotto, così `a·(x mod p) < 2^60` e non c'è overflow in `long long`.
+- **`UniversalHash`**: `h(x) = ((a·x + b) mod p) mod m`, con `p = 998244353` primo, dove m è il numero di bucket della tabella. I parametri sono `a = random_below(p-1) + 1`, quindi `a ∈ [1, p-1]`, e `b = random_below(p)`, quindi `b ∈ [0, p-1]`. `random_below(k)` è una funzione di AsGraph.hpp che restituisce un intero in `[0, k)` come `(hi · (RAND_MAX+1) + lo) mod k`, con hi e lo due chiamate a rand() in istruzioni separate. Una sola chiamata con RAND_MAX = 32767 darebbe solo 32768 valori, molti meno dei circa 10⁹ di a e b; due chiamate danno almeno 2³⁰ > p valori, e l’ordine fisso rende riproducibile l’esecuzione per un dato seed. La chiave viene ridotta modulo `p` prima del prodotto, così `a·(x mod p) < 2^60` e non c'è overflow in `long long`.
 - **`IdIndexTable`** (tabella hash `int → int`): usata per `id_to_index`, ID originale dell'AS → indice interno `0..V-1`. Ogni bucket è un `vector` di coppie `(chiave, valore)`. Operazioni: `cerca(chiave)` (restituisce `-1` se assente) e `inserisci(chiave, valore)`.
 - **`EdgeTable`** (tabella hash `long long → int`): usata per `edge_frequencies`, arco → frequenza. L'arco `(u,v)` con `u < v` è codificato in una sola chiave `u · 2^32 + v`, così l'hash universale della lezione si applica a un intero senza bisogno di hash per coppie. Operazioni: `incrementa(chiave)` (crea l'arco con frequenza 1 oppure aggiunge 1) e accesso ai bucket in sola lettura, per scorrere tutti gli archi. È temporanea: viene svuotata al termine di `construct_graph()`.
 - **Rehash**: entrambe le tabelle tengono il numero `n` di elementi; quando `n > m` raddoppiano i bucket (`rehash(2m)`) estraendo nuovi `a` e `b`, come nel `rehash(newM)` della lezione. Il fattore di carico resta ≤ 1, quindi non serve conoscere in anticipo il numero di archi.
@@ -50,7 +50,7 @@ Con `L` lunghezza totale dei cammini letti, `V` nodi ed `E` archi distinti: pars
 
 ### Dipendenze
 
-AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_index()`, `get_original_id()`) e da Experimental_Analysis (`count_nodes()`, `count_unique_edges()`, `get_adj()`).
+AsGraph non dipende dagli altri moduli. È usato da ExperimentalAnalysis (`count_nodes()`, `count_unique_edges()`, `get_adj()`, `get_original_id()`, `get_index()` ), che passa `get_adj()` a MiniMax.
 
 ---
 
@@ -79,7 +79,7 @@ AsGraph non dipende dagli altri moduli. È usato da MiniMax (`get_adj()`, `get_i
 - **Output**: `id_to_index`, `index_to_id` e `adj` popolati; `edge_frequencies` svuotata.
 - **Strutture dati**: `id_to_index` (`IdIndexTable`), `index_to_id` (`std::vector<int>`), `adj` (`std::vector<std::vector<std::pair<int,int>>>`, con gli indici interni dei vicini e le frequenze come pesi).
 - **Specifiche funzionali**:
-  - le strutture vengono azzerate all'inizio, per evitare archi duplicati se la funzione è chiamata due volte;
+  - le strutture vengono azzerate all'inizio e una seconda chiamata senza `count_frequencies()` produce un grafo vuoto, perché `edge_frequencies` è già stata svuotata;
   - per ogni arco `(u,v)` con frequenza `f`, scorrendo i bucket di `edge_frequencies`, si decodificano gli ID e si ottengono i due indici con `get_or_create_index()`; poi si aggiunge `(v,f)` in `adj[u]` e `(u,f)` in `adj[v]`;
   - inserimento dei nodi: `get_or_create_index()` restituisce l'indice se l'ID è già noto; altrimenti assegna il prossimo indice libero, lo inserisce in `id_to_index`, lo aggiunge a `index_to_id` e aggiunge una lista vuota a `adj`;
   - l'assegnazione degli indici dipende dall'ordine in cui si scorrono i bucket, che cambia con i parametri casuali dell'hash; i risultati del progetto non dipendono dagli indici;
@@ -203,14 +203,14 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 
 - **Input**:Gli archi orientati prodotti da MiniMax3
 
-- **Output**: `ancestor`, `maxweight`, `maxLog`
+- **Output**: `ancestor`, `maxWeight`, `maxLog`
 
-- **Strutture dati**: `ancestor`, `maxWeight` (tabelle `maxlog`x `n`)
+- **Strutture dati**: `ancestor`, `maxWeight` (tabelle `maxLog`x `n`)
 
 - **Specifiche funzionali**:
   - `maxLog` è calcolato come segue: si parte da 1 e si incrementa finché `1 << maxLog<=n`;
-  - caso base: per ogni arco `(padre, figlio, peso)` si pone `ancestor[0][figlio]=padre` e `maxWeight[0][figlio]=peso`; per la radice `ancestor[0][radice]=NiL`;
-  - caso induttivo: `ancestor[k+1][v]=ancesto[k][ancestor[k][v]]` se `ancestor[k][v] != NIL`, altrimenti Nil; `maxWeight[k+1][v]=max(maxWeight[k][v], maxWeight[k][ancestor[k][v]])`. Nel caso `ancestor[k][v]==NIL`, `maxWeight[k+1][v]=maxWeight[k][v]`
+  - caso base: per ogni arco `(padre, figlio, peso)` si pone `ancestor[0][figlio]=padre` e `maxWeight[0][figlio]=peso`; per la radice `ancestor[0][radice]=NIL`;
+  - caso induttivo: `ancestor[k+1][v]=ancestor[k][ancestor[k][v]]` se `ancestor[k][v] != NIL`, altrimenti Nil; `maxWeight[k+1][v]=max(maxWeight[k][v], maxWeight[k][ancestor[k][v]])`. Nel caso `ancestor[k][v]==NIL`, `maxWeight[k+1][v]=maxWeight[k][v]`
 
 - **Complessità**: O(nlogn) tempo.
 
@@ -226,7 +226,7 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 
 - **Specifiche funzionali**:
   - si scambiano i nodi in modo che u sia il più profondo
-  - si porta u alla profondità di v risalendo di depth[u]-depth[v] livelli e aggiornando il massimo con`maxweight[k][u]` a ogni salto;
+  - si porta u alla profondità di v risalendo di depth[u]-depth[v] livelli e aggiornando il massimo con`maxWeight[k][u]` a ogni salto;
   - se a questo punto u==v, il costo è il massimo accumulato;
   - per `k` da `maxLog-1` a 0, se `ancestor[k][u] != ancestor[k][v]` si salta (si risale nell'albero di 2^k livelli) con entrambi i nodi, aggiornando il massimo con `maxWeight[k][u]` e `maxWeight[k][v]`;  
   - al termine, u e v sono figli dello stesso nodo (il loro antenato comune più basso), quindi il costo finale è il massimo tra quello accumulato, `maxWeight[0][u]` e `maxWeight[0][v]`
@@ -259,7 +259,7 @@ File: `ExperimentalAnalysis.hpp`, `ExperimentalAnalysis.cpp`.
 - **Input**:
   - percorso del file BGP (formati di AsGraph);
   - numero Q di query casuali;
-  - numero `S ≤ Q` di query da verificare;
+  - numero S di query da verificare (Se `S>Q` se ne verificano Q);
   - seme `seed` per `srand()`.
 
 - **Output**:
@@ -268,7 +268,7 @@ File: `ExperimentalAnalysis.hpp`, `ExperimentalAnalysis.cpp`.
 
 - **Strumenti usati**:
   - `<chrono>` per misurare i tempi;
-  - `rand()` per generare numeri casuali;
+  - `rand()` per generare numeri casuali tramite `random_below()`;
   - `std::sort` per costruire l'istogramma;
   - visita BFS e ricerca booleana su funzioni monotone per la verifica.
 
@@ -374,7 +374,7 @@ File: `ExperimentalAnalysis.hpp`, `ExperimentalAnalysis.cpp`.
   - `std::vector<std::pair<int,int>> queries` con le coppie estratte;
   - `std::vector<int> costs` con i costi restituiti.
 - **Specifiche funzionali**:
-  - `random_index(n)` restituisce un intero in `[0, n)` usando due chiamate a `rand()`, come `(rand() * (RAND_MAX + 1LL) + rand()) % n`: su alcune piattaforme `RAND_MAX` è 32767, troppo poco per coprire tutti i nodi di un grafo AS;
+  - `random_index(n)` restituisce un intero in `[0, n)` chiamando `random_below(n)` di AsGraph;
   - `run_queries` con `n < 2` o `Q <= 0` lascia i vettori vuoti e `totalMs = 0`;
   - le coppie sono generate tutte prima di cronometrare, così il tempo non include la generazione; una coppia con `u == v` viene estratta di nuovo;
   - il cronometro (`steady_clock`) racchiude solo il ciclo `costs[i] = mm.query(u_i, v_i)`;
@@ -382,7 +382,7 @@ File: `ExperimentalAnalysis.hpp`, `ExperimentalAnalysis.cpp`.
   - `run_experiments()` usa `query_by_id()` per le query d'esempio finali, partendo dagli ID originali ottenuti con `get_original_id()`.
 - **Invarianti**: `queries.size() == costs.size()`, uguale a `Q` se `n ≥ 2` e `Q > 0`, altrimenti 0; ogni coppia ha `0 ≤ u, v < n` e `u != v`; ogni costo è ≥ 1 e coincide con la frequenza di un arco, quindi compare in `distinctFreq`.
 - **Complessità**: O(Q) per la generazione (in media), Q · O(log n) per le query; `query_by_id` O(log n) in media.
-- **Dipendenze**: AsGraph (`count_nodes()`, `get_index()`, `get_original_id()`), MiniMax (`query()`), ExperimentalAnalysis3 (`ms_since()`).
+- **Dipendenze**: AsGraph (`count_nodes()`, `get_index()`, `get_original_id()`, `random_below()`), MiniMax (`query()`), ExperimentalAnalysis3 (`ms_since()`).
 
 ### Sotto-modulo ExperimentalAnalysis5: verifica di correttezza
 
@@ -453,7 +453,7 @@ File: `main.cpp`.
   - i parametri numerici sono letti con `std::from_chars`, che rifiuta valori vuoti, non numerici o fuori range, come in AsGraph; i valori negativi sono rifiutati con un controllo esplicito;
   - il numero di argomenti deve essere tra 1 e 4, altrimenti si stampa l'uso e si esce con codice 1;
   - le eccezioni sono intercettate e stampate su `std::cerr`.
-- **Dipendenze**: solo ExperimentalAnalysis (`run_experiments()`); gli altri moduli sono usati da `run_experiments()`. Quando Count_Paths sarà implementato, il `main` non cambierà: verrà esteso `run_experiments()`.
+- **Dipendenze**: solo ExperimentalAnalysis (`run_experiments()`); gli altri moduli sono usati da `run_experiments()`.
 
 ## Interazione fra moduli
 

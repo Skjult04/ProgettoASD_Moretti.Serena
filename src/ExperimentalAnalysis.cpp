@@ -53,10 +53,9 @@ double ms_since(std::chrono::steady_clock::time_point start) {
 
 // ExperimentalAnalysis4: esperimenti sulle query
 
-// Due rand() combinate: con RAND_MAX = 32767 una sola chiamata non coprirebbe
-// tutti i nodi di un grafo AS.
+// Indice casuale in [0, n): usa random_below() di AsGraph.hpp.
 int random_index(int n) {
-    return static_cast<int>((rand() * (RAND_MAX + 1LL) + rand()) % n);
+    return static_cast<int>(random_below(n));
 }
 
 void run_queries(const AsGraph& g, const MiniMax& mm, int Q,

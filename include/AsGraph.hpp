@@ -6,6 +6,18 @@
 #include <utility>
 #include <vector>
 
+// Intero pseudocasuale in [0, m), con 0 < m <= (RAND_MAX+1)^2.
+// Due chiamate a rand() combinate: con RAND_MAX = 32767 una sola chiamata darebbe
+// solo 32768 valori, troppo pochi per i parametri a e b dell'hash (fino a p-1)
+// e per gli indici dei nodi. Le due chiamate sono in istruzioni separate perche'
+// l'ordine di valutazione degli operandi non e' specificato: cosi' la sequenza,
+// per un dato seed, non dipende dal compilatore.
+inline long long random_below(long long m) {
+    long long hi = rand();
+    long long lo = rand();
+    return (hi * (RAND_MAX + 1LL) + lo) % m;
+}
+
 // Hash universale (stesso schema visto a lezione): h(x) = ((a*x + b) mod p)
 // con p primo, a in [1, p-1], b in [0, p-1] scelti a caso.
 // La chiave viene ridotta modulo p prima del prodotto: con p < 2^30 e a < p
@@ -23,7 +35,7 @@ private:
 public:
 	
 UniversalHash(long long _p = 998244353)
-		: p(_p), a(rand() % (_p - 1) + 1), b(rand() % _p) {}
+		: p(_p), a(random_below(_p - 1) + 1), b(random_below(_p)) {}
 
 	//La riduzione preventiva x % p 
 	//garantisce che il prodotto non superi il limite di un intero a 64-bit
@@ -33,8 +45,8 @@ UniversalHash(long long _p = 998244353)
 		//Rigenera casualmente i parametri a e b 
 		//per cambiare la funzione di hash in caso di troppe collisioni.
 		void rehash() {
-		a = rand() % (p - 1) + 1;
-		b = rand() % p;
+		a = random_below(p - 1) + 1;
+		b = random_below(p);
 	}
 };
 
@@ -139,7 +151,8 @@ public:
 	void count_frequencies(const std::string& filename);
 
 	// AsGraph2: costruisce mappatura e lista di adiacenza da edge_frequencies,
-	// poi libera edge_frequencies. Precondizione: count_frequencies() già chiamata.
+	// Ripartenza pulita; una seconda chiamata senza nuova count_frequencies()
+	// darebbe un grafo vuoto, perche' edge_frequencies e' gia' stata svuotata
 	void construct_graph();
 
 	// AsGraph3: mantiene solo la componente connessa più grande. Dopo la chiamata
