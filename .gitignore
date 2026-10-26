@@ -1,23 +1,24 @@
-#Ignora i file oggetto generati durante la compilazione
-src/*.o
+# Compilazione
+build/
+*.o
+*.d
 *.out
-
-#Ignora gli eseguibili generati
 *.exe
-*.out
+asd_project
+test_example
 
-#Ignora i dataset BGP e file compressi pesanti
+# Dataset BGP (pesanti): si tiene solo il campione piccolo in data/
 *.bz2
-data/*.bz2
-data/*.all-paths
 *.all-paths
+*.as-rel.txt
 
-#Ignora file di testo generati o di output di grandi dimensioni
+# Output generato dagli esperimenti
+istogramma.csv
 data/output_*.txt
-#VS Code
-.vscode/
 
-#File temporanei di editor di testo
+# Editor e sistema
+.vscode/
+.idea/
 *~
 *.swp
 .DS_Store
