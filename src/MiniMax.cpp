@@ -1,4 +1,4 @@
-#include "Minimax.hpp"
+#include "MiniMax.hpp"
 #include <algorithm>
 
 using namespace std;

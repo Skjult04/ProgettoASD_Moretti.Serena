@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "AsGraph.hpp"
-#include "Minimax.hpp"
+#include "MiniMax.hpp"
 
 // Modulo ExperimentalAnalysis: statistiche, istogramma delle frequenze, tempi,
 // query casuali, verifica di correttezza e report.
