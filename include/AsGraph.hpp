@@ -18,7 +18,7 @@ inline long long random_below(long long m) {
     return (hi * (RAND_MAX + 1LL) + lo) % m;
 }
 
-// Hash universale (stesso schema visto a lezione): h(x) = ((a*x + b) mod p)
+// Hash universale: h(x) = ((a*x + b) mod p)
 // con p primo, a in [1, p-1], b in [0, p-1] scelti a caso.
 // La chiave viene ridotta modulo p prima del prodotto: con p < 2^30 e a < p
 // il prodotto a*(x mod p) resta sotto 2^60, quindi niente overflow in long long.

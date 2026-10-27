@@ -30,7 +30,7 @@ Le tabelle hash sono implementate seguendo il dizionario visto a lezione (hash u
 - **`UniversalHash`**: `h(x) = ((a·x + b) mod p) mod m`, con `p = 998244353` primo, dove m è il numero di bucket della tabella. I parametri sono `a = random_below(p-1) + 1`, quindi `a ∈ [1, p-1]`, e `b = random_below(p)`, quindi `b ∈ [0, p-1]`. `random_below(k)` è una funzione di AsGraph.hpp che restituisce un intero in `[0, k)` come `(hi · (RAND_MAX+1) + lo) mod k`, con hi e lo due chiamate a rand() in istruzioni separate. Una sola chiamata con RAND_MAX = 32767 darebbe solo 32768 valori, molti meno dei circa 10⁹ di a e b; due chiamate danno almeno 2³⁰ > p valori, e l’ordine fisso rende riproducibile l’esecuzione per un dato seed. La chiave viene ridotta modulo `p` prima del prodotto, così `a·(x mod p) < 2^60` e non c'è overflow in `long long`.
 - **`IdIndexTable`** (tabella hash `int → int`): usata per `id_to_index`, ID originale dell'AS → indice interno `0..V-1`. Ogni bucket è un `vector` di coppie `(chiave, valore)`. Operazioni: `cerca(chiave)` (restituisce `-1` se assente) e `inserisci(chiave, valore)`.
 - **`EdgeTable`** (tabella hash `long long → int`): usata per `edge_frequencies`, arco → frequenza. L'arco `(u,v)` con `u < v` è codificato in una sola chiave `u · 2^32 + v`, così l'hash universale della lezione si applica a un intero senza bisogno di hash per coppie. Operazioni: `incrementa(chiave)` (crea l'arco con frequenza 1 oppure aggiunge 1) e accesso ai bucket in sola lettura, per scorrere tutti gli archi. È temporanea: viene svuotata al termine di `construct_graph()`.
-- **Rehash**: entrambe le tabelle tengono il numero `n` di elementi; quando `n > m` raddoppiano i bucket (`rehash(2m)`) estraendo nuovi `a` e `b`, come nel `rehash(newM)` della lezione. Il fattore di carico resta ≤ 1, quindi non serve conoscere in anticipo il numero di archi.
+- **Rehash**: entrambe le tabelle tengono il numero `n` di elementi; quando `n > m` raddoppiano i bucket (`rehash(2m)`) estraendo nuovi `a` e `b`, come nel `rehash(newM)` della lezione. Il fattore di carico resta ≤ 1.
 - **Vettore dinamico (`std::vector`)**
   - `index_to_id`: indice interno → ID originale (mappatura inversa).
 - **Lista di adiacenza** (`std::vector<std::vector<std::pair<int,int>>>`)
@@ -457,10 +457,15 @@ File: `main.cpp`.
 
 ## Interazione fra moduli
 
-L'interazione fra i moduli avviene in maniera sequenziale.
+AsGraph e MiniMax sono indipendenti: nessuno dei due include l'altro, né ExperimentalAnalysis. Il solo punto di contatto tra loro è il tipo della lista di adiacenza: `AsGraph::get_adj()` restituisce un `std::vector<std::vector<std::pair<int,int>>>`, che è esattamente il tipo `MiniMax::AdjList` accettato dal costruttore di MiniMax.
 
-- L'input, rielaborato da AsGraph, viene passato a MiniMax tramite `get_adj()`. MiniMax lo usa per la costruzione dell'MST e il pre-calcolo delle tabelle per il Binary Lifting. Le query arrivano con gli ID originali degli AS e vengono tradotte con `get_index()`; i risultati si riportano agli ID originali con `get_original_id()`.
-- Da definire l'interazione con il terzo modulo.
-- ExperimentalAnalysis chiama in sequenza `count_frequencies()`, `construct_graph()`, `extract_lcc()` di AsGraph e il costruttore di MiniMax, misurando il tempo di ciascuna chiamata.
-- Dopo `extract_lcc()` legge da AsGraph `count_nodes()`, `count_unique_edges()` e `get_adj()`; l'istogramma delle frequenze si ricava da `get_adj()` contando ogni arco una sola volta (solo quando `v > u`), perché `edge_frequencies` viene svuotata dopo la costruzione del grafo.
-- Le query vengono eseguite su indici interni con `MiniMax::query()`; per riportare i risultati con gli ID originali degli AS si usa `get_original_id()`.
+Il collegamento è realizzato da ExperimentalAnalysis, che dipende da entrambi e orchestra il flusso (`run_experiments()`):
+
+1. chiama in sequenza `count_frequencies()`, `construct_graph()` ed `extract_lcc()` di AsGraph, misurando il tempo di ciascuna fase;
+2. passa la lista di adiacenza della LCC a MiniMax con `MiniMax mm(g.get_adj())`, misurando il tempo del costruttore (Kruskal, orientamento dell'MST, Binary Lifting);
+3. legge da AsGraph `count_nodes()`, `count_unique_edges()` e `get_adj()` per statistiche e istogramma. L'istogramma si ricava da `get_adj()` contando ogni arco una sola volta (solo quando `v > u`), perché `edge_frequencies` viene svuotata dopo la costruzione del grafo;
+4. esegue le query con `MiniMax::query()`, che lavora solo su indici interni.
+
+La traduzione tra ID originali degli AS e indici interni avviene fuori da MiniMax, in ExperimentalAnalysis, tramite `get_index()` e `get_original_id()` di AsGraph (ad esempio in `query_by_id()`). Se un AS non è nella LCC, `get_index()` restituisce -1 e `query()` risponde `NIL`.
+
+Il modulo CountPaths, quando sarà definito, userà `get_adj()` come MiniMax; la sua interazione con gli altri moduli è da definire.

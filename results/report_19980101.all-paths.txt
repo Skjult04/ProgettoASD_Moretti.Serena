@@ -1,0 +1,28 @@
+=== Grafo ===
+Grafo completo: 3234 nodi, 5776 archi
+LCC:            3234 nodi, 5776 archi
+La LCC contiene il 100.00% dei nodi e il 100.00% degli archi
+
+=== Frequenze (LCC) ===
+Frequenza massima: 49609
+Archi con frequenza 1: 128 (2.22%)
+Frequenze distinte: 822 (istogramma completo in istogramma.csv)
+
+=== Tempi (ms) ===
+Lettura e conteggio frequenze: 113.43
+Costruzione del grafo:         1.23
+Estrazione della LCC:          0.51
+Costruzione di MiniMax:        0.86
+
+=== Query minimax ===
+Query eseguite: 100000
+Costo ottimo minimo / massimo / medio: 1 / 48776 / 155.66
+Tempo medio per query: 0.04 us
+Verifica con BFS: 0 discordanze su 50 query
+
+=== Esempi ===
+AS6313 -> AS7253: costo minimax ottimo 79
+AS1891 -> AS2843: costo minimax ottimo 429
+AS8405 -> AS4959: costo minimax ottimo 108
+AS6413 -> AS4043: costo minimax ottimo 48
+AS9 -> AS3110: costo minimax ottimo 81

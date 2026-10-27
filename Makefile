@@ -26,7 +26,7 @@ test: $(TEST)
 	./$(TEST)
 
 clean:
-	rm -rf $(BUILD) $(TARGET) $(TEST) *.d
+	rm -rf $(BUILD) $(TARGET) $(TARGET).exe $(TEST) $(TEST).exe *.d
 
 -include $(DEP)
 
