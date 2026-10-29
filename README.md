@@ -2,11 +2,10 @@
 
 Progetto di Algoritmi e Strutture Dati.
 
-Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti quattro macro-moduli:
+Per iniziare, ho pensato di suddividere la struttura del codice nei seguenti tre macro-moduli:
 
 1. **AsGraph**: costruzione del grafo AS pesato e non orientato ed estrazione della componente connessa più grande.
 2. **MiniMax**: struttura dati per rispondere alle query di cammino minimax.
-3. **CountPaths**: parte opzionale (conteggio dei cammini a costo minimax ottimo).
 4. **ExperimentalAnalysis**: misure di tempo e statistiche sul grafo.
 
 ---
@@ -111,7 +110,7 @@ AsGraph non dipende dagli altri moduli. È usato da ExperimentalAnalysis (`count
 
 - **Idea di fondo**: dati due nodi u e v, il costo minimax ottimo è il massimo peso degli archi sull'unico cammino da u a v nell'MST. Di conseguenza non serve Dijkstra: basta costruire l'MST una volta e interrogarlo. Se più archi hanno lo stesso peso, l'MST non è unico, ma il costo minimax calcolato è sempre lo stesso.
 
-- **Input**: la lista di adiacenza della LCC fornita da `AsGraph::get_adj()` (precondizione: grafo connesso e `adj` simmetrica, con lo stesso peso nelle liste dei due estremi).
+- **Input**: la lista di adiacenza della LCC di tipo `MiniMax::AdjList` passata al costruttore da ExperimentalAnalysis, che la ottiene da AsGraph(`get_adj()`) (precondizione: grafo connesso e `adj` simmetrica, con lo stesso peso nelle liste dei due estremi).
 
 - **Output**: un oggetto `MiniMax` che espone `query(u, v)`, dove `u` e `v` sono indici interni, e `countMstEdges()`.
 
@@ -133,7 +132,7 @@ AsGraph non dipende dagli altri moduli. È usato da ExperimentalAnalysis (`count
 
 ### Complessità attesa
 
-Costruzione: O(m log m) per Kruskal (dominato dall'ordinamento), O(n) per l'orientamento dell'MST, O(n log n) per le tabelle del Binary Lifting. Query: O(log n). Spazio: O(m) temporaneo per la lista degli archi, O(n log n) per `ancestor` e `maxWeight`.
+Costruzione: O(m log n) per Kruskal, O(n) per l'orientamento dell'MST, O(n log n) per le tabelle del Binary Lifting. Query: O(log n). Spazio: O(m) temporaneo per la lista degli archi, O(n log n) per `ancestor` e `maxWeight`.
 
 ### Dipendenze
 
@@ -233,11 +232,6 @@ lavorano su indici interni: la traduzione da e verso gli ID originali degli AS u
 
 - **Complessità**: O(logn) per query.
 
-## 3. Modulo CountPaths
-
-- **Compiti**: da definire.
-- **Obiettivi**: eventuale implementazione della parte opzionale del codice.
-- **Strutture dati**: da definire.
 
 ## 4. Modulo ExperimentalAnalysis
 

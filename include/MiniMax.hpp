@@ -2,7 +2,7 @@
 #include <vector>
 #include <utility>
 
-// ---------- MiniMax1: Union-Find ----------
+// MiniMax1: Union-Find
 class UnionFind {
 public:
     explicit UnionFind(int n);
@@ -14,7 +14,7 @@ private:
     std::vector<int> setSize;
 };
 
-// ---------- MiniMax2-5 ----------
+// MiniMax2-5
 class MiniMax {
 public:
     using AdjList = std::vector<std::vector<std::pair<int, int>>>;

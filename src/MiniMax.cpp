@@ -23,7 +23,6 @@ bool UnionFind::sameSet(int u, int v) const {
 }
 
 // Unisci(u, v): se S_u != S_v fonde i due insiemi 
-// se S_u == S_v non fa nulla.
 // Precondizione: sameSet(u, v) == false.
 void UnionFind::unite(int u, int v) {
     auto a = find(u);
